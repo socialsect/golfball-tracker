@@ -39,6 +39,7 @@
                 <br><br>
                 <label><input type="checkbox" id="trace" checked> ✨ Trace Ball</label>
                 <label><input type="checkbox" id="smooth" checked> 🌊 Smooth Path</label>
+                <label><input type="checkbox" id="bbox"> 📦 Bounding Box</label>
                 <br>
                 <button id="clear">🗑️ Clear Trail</button>
                 <button id="playBtn">▶ Play</button>
@@ -62,6 +63,7 @@
         const upload = document.getElementById('upload');
         const traceCB = document.getElementById('trace');
         const smoothCB = document.getElementById('smooth');
+        const bboxCB = document.getElementById('bbox');
         const clearBtn = document.getElementById('clear');
         const playBtn = document.getElementById('playBtn');
         const replayBtn = document.getElementById('replayBtn');
@@ -76,7 +78,7 @@
         let lastBall = null;
         let fpsCounter = { last: 0, frames: 0 };
 
-        // 🔥 OPTIMIZED GOLF BALL DETECTION (Mobile Safari)
+        // 🔥 FIXED: LOW-LIGHT GOLF BALL DETECTION (for your indoor video)
         function findBallSimple(ctx, w, h) {
             const imageData = ctx.getImageData(0, 0, w, h);
             const data = imageData.data;
@@ -88,9 +90,9 @@
                     const i = (y * w + x) * 4;
                     const r = data[i], g = data[i+1], b = data[i+2];
                     
-                    // Golf ball signature: bright white, low color variance
+                    // FIXED: Lower thresholds for dim indoor balls
                     const brightness = (r + g + b) / 3;
-                    if (brightness > 150 && Math.abs(r-g) < 45 && Math.abs(r-b) < 45) {
+                    if (brightness > 100 && Math.abs(r-g) < 60 && Math.abs(r-b) < 60) {
                         
                         // Verify circular white blob
                         let whiteCount = 0, totalCount = 0, edgeContrast = 0;
@@ -101,8 +103,9 @@
                                 if (nx > 0 && nx < w && ny > 0 && ny < h) {
                                     const ni = (ny * w + nx) * 4;
                                     totalCount++;
+                                    // FIXED: Lower white threshold
                                     const nb = (data[ni] + data[ni+1] + data[ni+2]) / 3;
-                                    if (nb > 135) whiteCount++;
+                                    if (nb > 90) whiteCount++;  // Was 135
                                     
                                     // Edge detection for ball shape
                                     if (Math.abs(dx) === 7 || Math.abs(dy) === 7) {
@@ -113,7 +116,8 @@
                         }
                         
                         const score = (whiteCount / totalCount) * (edgeContrast / 500);
-                        if (score > 0.5 && score > bestScore) {
+                        // FIXED: Much lower threshold
+                        if (score > 0.3 && score > bestScore) {  // Was 0.5
                             bestScore = score;
                             bestX = x;
                             bestY = y;
@@ -121,7 +125,7 @@
                     }
                 }
             }
-            return bestScore > 0.5 ? {x: bestX, y: bestY, score: bestScore} : null;
+            return bestScore > 0.3 ? {x: bestX, y: bestY, score: bestScore} : null;
         }
 
         // 🎨 MAIN TRACKING LOOP
@@ -205,6 +209,29 @@
                     ctx.restore();
                 }
             }
+
+            // 📦 BOUNDING BOX (NEW!)
+            if (bboxCB.checked && lastBall) {
+                const boxSize = 28;
+                ctx.strokeStyle = '#ff00ff';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([8, 8]);
+                ctx.strokeRect(
+                    lastBall.x - boxSize/2, 
+                    lastBall.y - boxSize/2, 
+                    boxSize, 
+                    boxSize
+                );
+                ctx.setLineDash([]);
+                
+                // Confidence score
+                ctx.fillStyle = '#ff00ff';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${Math.round(lastBall.score*100)}%`, 
+                            lastBall.x, lastBall.y - 20);
+                ctx.textAlign = 'start';
+            }
             
             frameCount++;
             updateFPS();
@@ -225,7 +252,6 @@
         upload.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                // Reset everything
                 video.src = URL.createObjectURL(file);
                 trajectory = [];
                 frameCount = 0;
@@ -283,9 +309,9 @@
 
         // 📱 MOBILE OPTIMIZATIONS
         video.playsInline = true;
-        video.muted = true; // iOS autoplay requirement
+        video.muted = true;
         
-        console.log('🚀 Shot Tracer loaded - Upload golf video to test!');
+        console.log('🚀 Shot Tracer loaded - Upload your dim indoor golf video!');
     </script>
 </body>
 </html>
