@@ -1,0 +1,1068 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Golf Ball Detector - Improved with Kalman Filter</title>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+    
+    h1 { 
+      color: white;
+      text-align: center;
+      font-size: clamp(1.5rem, 5vw, 2.5rem);
+      margin: 15px 0;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    #container {
+      position: relative;
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+    }
+    
+    #container::before {
+      content: "";
+      display: block;
+      padding-top: 75%; /* 4:3 aspect ratio */
+    }
+    
+    video, canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    video {
+      display: none;
+    }
+    
+    #output {
+      border: none;
+    }
+    
+    #controls {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      backdrop-filter: blur(10px);
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      flex: 1;
+      min-width: 120px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    button:active {
+      transform: scale(0.95);
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    input[type="file"] {
+      display: none;
+    }
+    
+    .file-upload-btn {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      cursor: pointer;
+      display: inline-block;
+      text-align: center;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      padding: 15px;
+      border-radius: 10px;
+      border: 2px solid #667eea30;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .loading {
+      padding: 15px;
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+      border-radius: 10px;
+      margin-bottom: 15px;
+      text-align: center;
+      font-weight: 600;
+      color: #8b4513;
+    }
+    
+    .progress {
+      width: 100%;
+      height: 30px;
+      background: #e0e0e0;
+      border-radius: 15px;
+      overflow: hidden;
+      margin: 15px 0;
+      display: none;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      width: 0%;
+      transition: width 0.3s;
+      text-align: center;
+      line-height: 30px;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    .settings-toggle {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 15px;
+      border: 2px solid #e0e0e0;
+    }
+    
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .settings-header h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #333;
+    }
+    
+    .settings-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    
+    .settings-content.open {
+      max-height: 500px;
+      margin-top: 15px;
+    }
+    
+    .setting-item {
+      margin: 15px 0;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #555;
+    }
+    
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #ddd;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    
+    @media (max-width: 480px) {
+      body {
+        padding: 5px;
+      }
+      
+      h1 {
+        font-size: 1.5rem;
+        margin: 10px 0;
+      }
+      
+      #controls {
+        padding: 15px;
+      }
+      
+      .button-group {
+        flex-direction: column;
+      }
+      
+      button {
+        width: 100%;
+        min-width: unset;
+      }
+      
+      .stat-card {
+        padding: 10px;
+      }
+      
+      .stat-value {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🏌️ Golf Ball Tracker</h1>
+  
+  <div id="container">
+    <video id="video" width="640" height="480" autoplay playsinline></video>
+    <canvas id="output" width="640" height="480"></canvas>
+  </div>
+  
+  <div id="controls">
+    <div class="loading" id="loading">⏳ Loading OpenCV.js...</div>
+    
+    <div class="button-group">
+      <label for="videoFile" class="file-upload-btn button">
+        📁 Upload Video/Image
+      </label>
+      <input type="file" id="videoFile" accept="video/*,image/*">
+      
+      <button id="webcamBtn" disabled>📷 Start Camera</button>
+      <button id="stopBtn" class="btn-danger" disabled>⏹ Stop</button>
+    </div>
+    
+    <div class="progress" id="progress">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+    
+    <button id="processBtn" class="btn-primary" style="display:none; width:100%;">🎬 Process Video</button>
+    <button id="downloadBtn" class="btn-primary" style="display:none; width:100%; margin-top:10px;" disabled>💾 Download Result</button>
+    
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Status</div>
+        <div class="stat-value" id="trackStatus">Ready</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Confidence</div>
+        <div class="stat-value" id="confScore">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">FPS</div>
+        <div class="stat-value" id="fps">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">OpenCV</div>
+        <div class="stat-value" id="cvStatus">Loading...</div>
+      </div>
+    </div>
+    
+    <div class="settings-toggle">
+      <div class="settings-header" onclick="toggleSettings()">
+        <h3>⚙️ Advanced Settings</h3>
+        <span id="settingsIcon">▼</span>
+      </div>
+      <div class="settings-content" id="settingsContent">
+        <div class="setting-item">
+          <label>White Threshold: <span id="thresholdVal">210</span></label>
+          <input type="range" id="threshold" min="180" max="255" value="210">
+        </div>
+        
+        <div class="setting-item">
+          <label>Min Radius: <span id="minRadiusVal">8</span>px</label>
+          <input type="range" id="minRadius" min="5" max="30" value="8">
+        </div>
+        
+        <div class="setting-item">
+          <label>Max Radius: <span id="maxRadiusVal">50</span>px</label>
+          <input type="range" id="maxRadius" min="30" max="100" value="50">
+        </div>
+        
+        <div class="setting-item">
+          <label>Circularity: <span id="circularityVal">0.7</span></label>
+          <input type="range" id="circularity" min="0.5" max="1.0" step="0.05" value="0.7">
+        </div>
+        
+        <div class="setting-item">
+          <label>Path Length: <span id="trailVal">30</span></label>
+          <input type="range" id="trail" min="10" max="100" value="30">
+        </div>
+        
+        <div class="setting-item">
+          <label>Lock Frames: <span id="confidenceVal">5</span></label>
+          <input type="range" id="confidence" min="3" max="15" value="5">
+        </div>
+        
+        <div class="setting-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showDebug">
+            <span>Show Debug Info</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load OpenCV.js -->
+  <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+
+  <script>
+    function toggleSettings() {
+      const content = document.getElementById('settingsContent');
+      const icon = document.getElementById('settingsIcon');
+      content.classList.toggle('open');
+      icon.textContent = content.classList.contains('open') ? '▲' : '▼';
+    }
+    let opencvReady = false;
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('output');
+    let ctx = canvas.getContext('2d');
+    
+    // Performance tracking
+    let lastTime = Date.now();
+    let frameCount = 0;
+    
+    // Kalman filter for tracking
+    class KalmanFilter {
+      constructor() {
+        this.x = 0;  // position x
+        this.y = 0;  // position y
+        this.vx = 0; // velocity x
+        this.vy = 0; // velocity y
+        
+        // Process noise
+        this.Q = 1.0;
+        // Measurement noise
+        this.R = 4.0;
+        
+        // State covariance
+        this.Px = 1.0;
+        this.Py = 1.0;
+        this.Pvx = 1.0;
+        this.Pvy = 1.0;
+      }
+      
+      predict() {
+        // Predict next position
+        this.x += this.vx;
+        this.y += this.vy;
+        
+        // Update covariance
+        this.Px += this.Pvx + this.Q;
+        this.Py += this.Pvy + this.Q;
+      }
+      
+      update(measuredX, measuredY) {
+        // Kalman gain
+        const Kx = this.Px / (this.Px + this.R);
+        const Ky = this.Py / (this.Py + this.R);
+        
+        // Update estimate with measurement
+        const innovationX = measuredX - this.x;
+        const innovationY = measuredY - this.y;
+        
+        this.x += Kx * innovationX;
+        this.y += Ky * innovationY;
+        
+        // Update velocity
+        this.vx = this.vx * 0.8 + innovationX * 0.2;
+        this.vy = this.vy * 0.8 + innovationY * 0.2;
+        
+        // Update covariance
+        this.Px *= (1 - Kx);
+        this.Py *= (1 - Ky);
+      }
+      
+      getPosition() {
+        return { x: this.x, y: this.y };
+      }
+    }
+    
+    // Ball tracker with Kalman filter
+    let tracker = {
+      kalman: null,
+      isTracking: false,
+      lastDetection: null,
+      missedFrames: 0,
+      confidenceFrames: 0,
+      path: [],
+      minConfidence: 5,
+      maxMissedFrames: 10
+    };
+    
+    // Video processing
+    let isProcessing = false;
+    let recordedChunks = [];
+    let mediaRecorder = null;
+    
+    // Settings
+    let settings = {
+      threshold: 210,
+      minRadius: 8,
+      maxRadius: 50,
+      circularityThreshold: 0.7,
+      trailLength: 30,
+      showDebug: false,
+      minConfidence: 5
+    };
+    
+    let isRunning = false;
+    let isWebcam = false;
+    
+    // Update settings from controls
+    document.getElementById('threshold').oninput = (e) => {
+      settings.threshold = parseInt(e.target.value);
+      document.getElementById('thresholdVal').textContent = e.target.value;
+    };
+    
+    document.getElementById('minRadius').oninput = (e) => {
+      settings.minRadius = parseInt(e.target.value);
+      document.getElementById('minRadiusVal').textContent = e.target.value;
+    };
+    
+    document.getElementById('maxRadius').oninput = (e) => {
+      settings.maxRadius = parseInt(e.target.value);
+      document.getElementById('maxRadiusVal').textContent = e.target.value;
+    };
+    
+    document.getElementById('circularity').oninput = (e) => {
+      settings.circularityThreshold = parseFloat(e.target.value);
+      document.getElementById('circularityVal').textContent = e.target.value;
+    };
+    
+    document.getElementById('trail').oninput = (e) => {
+      settings.trailLength = parseInt(e.target.value);
+      document.getElementById('trailVal').textContent = e.target.value;
+    };
+    
+    document.getElementById('confidence').oninput = (e) => {
+      settings.minConfidence = parseInt(e.target.value);
+      tracker.minConfidence = settings.minConfidence;
+      document.getElementById('confidenceVal').textContent = e.target.value;
+    };
+    
+    document.getElementById('showDebug').onchange = (e) => {
+      settings.showDebug = e.target.checked;
+    };
+    
+    // Video file upload
+    document.getElementById('videoFile').onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      if (!opencvReady) {
+        alert('Please wait for OpenCV.js to load');
+        return;
+      }
+      
+      stopWebcam();
+      resetTracker();
+      
+      if (file.type.startsWith('image/')) {
+        loadImage(file);
+      } else if (file.type.startsWith('video/')) {
+        loadVideoFile(file);
+      }
+    };
+    
+    function loadImage(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          processFrame();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    function loadVideoFile(file) {
+      const url = URL.createObjectURL(file);
+      video.src = url;
+      video.load();
+      
+      video.onloadedmetadata = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        document.getElementById('processBtn').style.display = 'inline-block';
+        
+        video.currentTime = 0;
+        video.onseeked = () => {
+          ctx.drawImage(video, 0, 0);
+          processFrame();
+        };
+      };
+    }
+    
+    // Webcam controls
+    document.getElementById('webcamBtn').onclick = async () => {
+      if (!opencvReady) {
+        alert('Please wait for OpenCV.js to load');
+        return;
+      }
+      
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: 640, height: 480 } 
+        });
+        
+        video.srcObject = stream;
+        await video.play();
+        
+        isWebcam = true;
+        isRunning = true;
+        resetTracker();
+        
+        document.getElementById('webcamBtn').disabled = true;
+        document.getElementById('stopBtn').disabled = false;
+        
+        detectLoop();
+      } catch (err) {
+        alert('Camera access denied: ' + err);
+      }
+    };
+    
+    document.getElementById('stopBtn').onclick = () => {
+      stopWebcam();
+    };
+    
+    function stopWebcam() {
+      isRunning = false;
+      
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(t => t.stop());
+        video.srcObject = null;
+      }
+      
+      isWebcam = false;
+      resetTracker();
+      
+      document.getElementById('webcamBtn').disabled = false;
+      document.getElementById('stopBtn').disabled = true;
+    }
+    
+    function resetTracker() {
+      tracker.kalman = new KalmanFilter();
+      tracker.isTracking = false;
+      tracker.lastDetection = null;
+      tracker.missedFrames = 0;
+      tracker.confidenceFrames = 0;
+      tracker.path = [];
+      
+      document.getElementById('trackStatus').textContent = 'Ready';
+      document.getElementById('confScore').textContent = '0';
+    }
+    
+    // Calculate circularity of a contour
+    function calculateCircularity(contour) {
+      try {
+        const area = cv.contourArea(contour);
+        const perimeter = cv.arcLength(contour, true);
+        
+        if (perimeter === 0) return 0;
+        
+        // Circularity = 4π * area / perimeter²
+        // Perfect circle = 1.0
+        const circularity = (4 * Math.PI * area) / (perimeter * perimeter);
+        return circularity;
+      } catch (e) {
+        return 0;
+      }
+    }
+    
+    // White ball detection with shape validation
+    function detectGolfBalls(imageData, w, h) {
+      const candidates = [];
+      
+      try {
+        // Create Mat from canvas
+        let src = cv.imread(canvas);
+        let gray = new cv.Mat();
+        let binary = new cv.Mat();
+        let contours = new cv.MatVector();
+        let hierarchy = new cv.Mat();
+        
+        // Convert to grayscale
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+        
+        // Threshold to get white regions
+        cv.threshold(gray, binary, settings.threshold, 255, cv.THRESH_BINARY);
+        
+        // Morphological operations to clean up
+        let kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(3, 3));
+        cv.morphologyEx(binary, binary, cv.MORPH_OPEN, kernel);
+        cv.morphologyEx(binary, binary, cv.MORPH_CLOSE, kernel);
+        
+        // Find contours
+        cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+        
+        // Analyze each contour
+        for (let i = 0; i < contours.size(); i++) {
+          const contour = contours.get(i);
+          const area = cv.contourArea(contour);
+          
+          // Filter by area
+          const minArea = Math.PI * settings.minRadius * settings.minRadius;
+          const maxArea = Math.PI * settings.maxRadius * settings.maxRadius;
+          
+          if (area < minArea || area > maxArea) {
+            continue;
+          }
+          
+          // Calculate circularity
+          const circularity = calculateCircularity(contour);
+          
+          if (circularity < settings.circularityThreshold) {
+            continue;
+          }
+          
+          // Get bounding circle
+          const moments = cv.moments(contour);
+          const cx = moments.m10 / moments.m00;
+          const cy = moments.m01 / moments.m00;
+          
+          const radius = Math.sqrt(area / Math.PI);
+          
+          // Calculate confidence score based on circularity
+          const confidence = circularity * 100;
+          
+          candidates.push({
+            x: cx,
+            y: cy,
+            radius: radius,
+            circularity: circularity,
+            confidence: confidence,
+            area: area
+          });
+        }
+        
+        // Cleanup
+        src.delete();
+        gray.delete();
+        binary.delete();
+        contours.delete();
+        hierarchy.delete();
+        kernel.delete();
+        
+      } catch (e) {
+        console.error('Detection error:', e);
+      }
+      
+      return candidates;
+    }
+    
+    // Select best candidate based on tracking and confidence
+    function selectBestCandidate(candidates) {
+      if (candidates.length === 0) return null;
+      
+      // If we're tracking, prefer candidates near predicted position
+      if (tracker.isTracking) {
+        const predicted = tracker.kalman.getPosition();
+        
+        let bestCandidate = null;
+        let bestScore = -Infinity;
+        
+        candidates.forEach(candidate => {
+          const distance = Math.sqrt(
+            Math.pow(candidate.x - predicted.x, 2) + 
+            Math.pow(candidate.y - predicted.y, 2)
+          );
+          
+          // Scoring: prefer closer to prediction and higher circularity
+          const proximityScore = 1 / (1 + distance / 50);
+          const shapeScore = candidate.circularity;
+          const totalScore = proximityScore * 0.6 + shapeScore * 0.4;
+          
+          if (totalScore > bestScore) {
+            bestScore = totalScore;
+            bestCandidate = candidate;
+          }
+        });
+        
+        return bestCandidate;
+      } else {
+        // Not tracking yet - pick most circular candidate
+        return candidates.reduce((best, current) => {
+          return current.circularity > best.circularity ? current : best;
+        });
+      }
+    }
+    
+    // Main detection function
+    function processFrame() {
+      if (!opencvReady) return;
+      
+      // Detect all candidates
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const candidates = detectGolfBalls(imageData, canvas.width, canvas.height);
+      
+      // Select best candidate
+      const bestBall = selectBestCandidate(candidates);
+      
+      // Update tracker
+      if (bestBall) {
+        if (!tracker.isTracking) {
+          // Initialize tracker
+          tracker.kalman = new KalmanFilter();
+          tracker.kalman.x = bestBall.x;
+          tracker.kalman.y = bestBall.y;
+          tracker.confidenceFrames = 1;
+        } else {
+          // Predict and update
+          tracker.kalman.predict();
+          tracker.kalman.update(bestBall.x, bestBall.y);
+          tracker.confidenceFrames++;
+        }
+        
+        tracker.lastDetection = bestBall;
+        tracker.missedFrames = 0;
+        
+        // Add to path immediately when detected
+        tracker.path.push({ x: bestBall.x, y: bestBall.y });
+        
+        if (tracker.path.length > settings.trailLength) {
+          tracker.path.shift();
+        }
+        
+        // Mark as tracking if stable
+        if (tracker.confidenceFrames >= tracker.minConfidence) {
+          tracker.isTracking = true;
+        }
+      } else {
+        // No detection
+        tracker.missedFrames++;
+        
+        if (tracker.isTracking) {
+          // Use Kalman prediction
+          tracker.kalman.predict();
+        }
+        
+        if (tracker.missedFrames > tracker.maxMissedFrames) {
+          // Lost tracking
+          resetTracker();
+        }
+      }
+      
+      // Update UI
+      if (tracker.isTracking) {
+        document.getElementById('trackStatus').textContent = 'Locked';
+        document.getElementById('trackStatus').style.color = '#4CAF50';
+      } else if (tracker.confidenceFrames > 0) {
+        document.getElementById('trackStatus').textContent = `${tracker.confidenceFrames}/${tracker.minConfidence}`;
+        document.getElementById('trackStatus').style.color = '#FF9800';
+      } else {
+        document.getElementById('trackStatus').textContent = 'Searching';
+        document.getElementById('trackStatus').style.color = '#999';
+      }
+      
+      document.getElementById('confScore').textContent = Math.min(tracker.confidenceFrames, tracker.minConfidence);
+      
+      // Draw debug info
+      if (settings.showDebug) {
+        candidates.forEach(candidate => {
+          ctx.strokeStyle = 'rgba(255, 255, 0, 0.3)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            candidate.x - candidate.radius,
+            candidate.y - candidate.radius,
+            candidate.radius * 2,
+            candidate.radius * 2
+          );
+        });
+      }
+      
+      // Draw tracking path - BRIGHT RED and THICK
+      if (tracker.path.length > 1) {
+        ctx.strokeStyle = '#FF0000';  // Bright red
+        ctx.lineWidth = 5;  // Very thick
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(tracker.path[0].x, tracker.path[0].y);
+        
+        for (let i = 1; i < tracker.path.length; i++) {
+          ctx.lineTo(tracker.path[i].x, tracker.path[i].y);
+        }
+        ctx.stroke();
+        
+        // Draw dots along the path - larger and more visible
+        ctx.fillStyle = '#FF0000';
+        tracker.path.forEach((p, i) => {
+          const size = 4 + (i / tracker.path.length) * 4;  // Bigger dots
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Add white outline to dots for better visibility
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        });
+      }
+      
+      // Draw detected ball - show even during acquisition!
+      if (tracker.lastDetection) {
+        const ball = tracker.lastDetection;
+        
+        // Choose color based on tracking state
+        let boxColor, labelColor;
+        if (tracker.isTracking) {
+          boxColor = '#00FF00';  // Bright green when locked
+          labelColor = '#00FF00';
+        } else {
+          boxColor = '#FF9800';  // Orange when acquiring
+          labelColor = '#FF9800';
+        }
+        
+        // Bounding box - BRIGHT and THICK
+        ctx.strokeStyle = boxColor;
+        ctx.lineWidth = 5;  // Very thick
+        ctx.strokeRect(
+          ball.x - ball.radius - 5,
+          ball.y - ball.radius - 5,
+          ball.radius * 2 + 10,
+          ball.radius * 2 + 10
+        );
+        
+        // Circle outline
+        ctx.strokeStyle = boxColor;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Center point - red
+        ctx.fillStyle = '#FF0000';
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, 6, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Label with background for better visibility
+        const status = tracker.isTracking ? 'LOCKED' : 'ACQUIRING';
+        const labelText = `Golf Ball - ${status} (${Math.round(ball.confidence)}%)`;
+        ctx.font = 'bold 18px Arial';
+        const textWidth = ctx.measureText(labelText).width;
+        
+        // Background rectangle
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(
+          ball.x - ball.radius - 5,
+          ball.y - ball.radius - 35,
+          textWidth + 10,
+          25
+        );
+        
+        // Text
+        ctx.fillStyle = labelColor;
+        ctx.fillText(
+          labelText, 
+          ball.x - ball.radius, 
+          ball.y - ball.radius - 15
+        );
+      }
+    }
+    
+    // Main detection loop for webcam
+    function detectLoop() {
+      if (!isRunning || !opencvReady) return;
+      
+      ctx.drawImage(video, 0, 0, 640, 480);
+      processFrame();
+      
+      // Calculate FPS
+      frameCount++;
+      let now = Date.now();
+      if (now - lastTime >= 1000) {
+        document.getElementById('fps').textContent = frameCount;
+        frameCount = 0;
+        lastTime = now;
+      }
+      
+      requestAnimationFrame(detectLoop);
+    }
+    
+    // Process video
+    document.getElementById('processBtn').onclick = async () => {
+      if (isProcessing || !opencvReady) return;
+      
+      isProcessing = true;
+      resetTracker();
+      
+      document.getElementById('processBtn').disabled = true;
+      document.getElementById('progress').style.display = 'block';
+      
+      const duration = video.duration;
+      const fps = 30;
+      const totalFrames = Math.floor(duration * fps);
+      
+      // Setup recording
+      const stream = canvas.captureStream(fps);
+      mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp8',
+        videoBitsPerSecond: 2500000
+      });
+      
+      recordedChunks = [];
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+      
+      mediaRecorder.start();
+      
+      for (let i = 0; i < totalFrames; i++) {
+        video.currentTime = i / fps;
+        await new Promise(resolve => {
+          video.onseeked = resolve;
+        });
+        
+        ctx.drawImage(video, 0, 0);
+        processFrame();
+        
+        await new Promise(resolve => setTimeout(resolve, 1000 / fps));
+        
+        const progress = ((i + 1) / totalFrames) * 100;
+        document.getElementById('progressBar').style.width = progress + '%';
+        document.getElementById('progressBar').textContent = Math.round(progress) + '%';
+      }
+      
+      mediaRecorder.stop();
+      
+      mediaRecorder.onstop = () => {
+        document.getElementById('downloadBtn').disabled = false;
+        document.getElementById('progress').style.display = 'none';
+        isProcessing = false;
+        document.getElementById('processBtn').disabled = false;
+      };
+    };
+    
+    // Download processed video
+    document.getElementById('downloadBtn').onclick = () => {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'golf_ball_tracked.webm';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+    
+    // OpenCV.js ready callback
+    function onOpenCvReady() {
+      opencvReady = true;
+      document.getElementById('cvStatus').textContent = '✓';
+      document.getElementById('cvStatus').style.color = '#4CAF50';
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('webcamBtn').disabled = false;
+      document.getElementById('trackStatus').textContent = 'Ready';
+      console.log('OpenCV.js is ready');
+    }
+    
+    // Wait for OpenCV to load
+    var Module = {
+      onRuntimeInitialized: onOpenCvReady
+    };
+  </script>
+</body>
+</html>
