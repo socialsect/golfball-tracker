@@ -1,30 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Shot Tracer - Browser Ball Tracker</title>
+    <title>Shot Tracer PRO - HoughCircles</title>
     <style>
         body { margin: 0; font-family: Arial; background: #000; color: #fff; overflow: hidden; }
         #container { display: flex; max-width: 1200px; margin: auto; height: 100vh; }
         #videoPanel { flex: 1; position: relative; background: #111; }
         #video, #canvas { width: 100%; height: auto; max-height: 100vh; display: block; }
-        #controls { 
-            position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); 
-            padding: 15px; border-radius: 8px; backdrop-filter: blur(10px);
-        }
-        #traces { 
-            position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); 
-            padding: 15px; border-radius: 8px; backdrop-filter: blur(10px); font-size: 14px;
-        }
+        #controls { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; }
+        #traces { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; font-size: 14px; }
         canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
-        button { 
-            background: linear-gradient(45deg, #333, #555); color: white; border: none; 
-            padding: 8px 16px; border-radius: 5px; margin: 3px; cursor: pointer; font-size: 14px;
-        }
-        button:hover { background: linear-gradient(45deg, #555, #777); }
+        button { background: #333; color: white; border: none; padding: 8px 16px; border-radius: 5px; margin: 3px; cursor: pointer; }
         input[type="checkbox"] { margin-right: 5px; transform: scale(1.2); }
         label { display: block; margin: 5px 0; cursor: pointer; }
         #status { font-weight: bold; color: #0f0; }
-        h1 { position: absolute; bottom: 20px; left: 20px; margin: 0; font-size: 24px; opacity: 0.7; }
     </style>
 </head>
 <body>
@@ -32,27 +21,21 @@
         <div id="videoPanel">
             <video id="video" controls playsinline muted></video>
             <canvas id="canvas"></canvas>
-            
             <div id="controls">
-                <div style="font-weight: bold; margin-bottom: 10px;">📹 Shot Tracer</div>
+                <div style="font-weight: bold;">🎯 Shot Tracer PRO</div>
                 <input type="file" id="upload" accept="video/*">
-                <br><br>
-                <label><input type="checkbox" id="trace" checked> ✨ Trace Ball</label>
-                <label><input type="checkbox" id="smooth" checked> 🌊 Smooth Path</label>
-                <label><input type="checkbox" id="bbox"> 📦 Bounding Box</label>
                 <br>
-                <button id="clear">🗑️ Clear Trail</button>
+                <label><input type="checkbox" id="trace" checked> ✨ Trace</label>
+                <label><input type="checkbox" id="hough" checked> 🔍 HoughCircles</label>
+                <label><input type="checkbox" id="bbox"> 📦 Box</label>
+                <button id="clear">Clear</button>
                 <button id="playBtn">▶ Play</button>
-                <button id="replayBtn">🔄 Replay</button>
             </div>
-            
             <div id="traces">
                 <div>FPS: <span id="fps">0</span></div>
-                <div>Points: <span id="points">0</span></div>
-                <div id="status">Upload golf video</div>
+                <div>Circles: <span id="circles">0</span></div>
+                <div id="status">Upload video</div>
             </div>
-            
-            <h1>Browser-based Shot Tracer - No Backend Needed 🚀</h1>
         </div>
     </div>
 
@@ -62,256 +45,169 @@
         const ctx = canvas.getContext('2d');
         const upload = document.getElementById('upload');
         const traceCB = document.getElementById('trace');
-        const smoothCB = document.getElementById('smooth');
+        const houghCB = document.getElementById('hough');
         const bboxCB = document.getElementById('bbox');
-        const clearBtn = document.getElementById('clear');
-        const playBtn = document.getElementById('playBtn');
-        const replayBtn = document.getElementById('replayBtn');
         const statusEl = document.getElementById('status');
-        const fpsEl = document.getElementById('fps');
-        const pointsEl = document.getElementById('points');
         
-        let trajectory = [];
-        let isTracking = false;
-        let rafId;
-        let frameCount = 0;
-        let lastBall = null;
+        let trajectory = [], isTracking = false, frameCount = 0, lastBall = null;
         let fpsCounter = { last: 0, frames: 0 };
 
-        // 🔥 FIXED: LOW-LIGHT GOLF BALL DETECTION (for your indoor video)
-        function findBallSimple(ctx, w, h) {
-            const imageData = ctx.getImageData(0, 0, w, h);
+        // 🔥 HOUGH CIRCLES IMPLEMENTATION (Pure JS)
+        function houghCircles(imageData, minRadius = 8, maxRadius = 25) {
             const data = imageData.data;
-            let bestX = 0, bestY = 0, bestScore = 0;
+            const w = imageData.width, h = imageData.height;
+            const circles = [];
             
-            // Scan every 12px for speed
-            for (let y = 40; y < h-40; y += 12) {
-                for (let x = 40; x < w-40; x += 12) {
-                    const i = (y * w + x) * 4;
-                    const r = data[i], g = data[i+1], b = data[i+2];
+            // Edge detection (Canny-like)
+            const edges = new Uint8Array(w * h);
+            for (let i = 0; i < data.length; i += 4) {
+                const x = (i / 4) % w, y = Math.floor(i / 4 / w);
+                if (x === 0 || x === w-1 || y === 0 || y === h-1) continue;
+                
+                const idx = y * w + x;
+                const r = data[i], g = data[i+1], b = data[i+2];
+                const gray = 0.3*r + 0.59*g + 0.11*b;
+                
+                // Sobel edge detection
+                const gx = -data[i-4*w] + data[i+4*w] + -2*data[i-4] + 2*data[i+4] + -data[i+4*w] + data[i-4*w];
+                const gy = -data[i-w*4] + data[i+w*4] + -2*data[i-w] + 2*data[i+w] + -data[i+w*4] + data[i-w*4];
+                const magnitude = Math.sqrt(gx*gx + gy*gy);
+                
+                edges[idx] = magnitude > 40 ? 255 : 0; // Threshold
+            }
+            
+            // Hough voting
+            for (let y = 10; y < h-10; y++) {
+                for (let x = 10; x < w-10; x++) {
+                    if (edges[y*w + x] === 0) continue;
                     
-                    // FIXED: Lower thresholds for dim indoor balls
-                    const brightness = (r + g + b) / 3;
-                    if (brightness > 100 && Math.abs(r-g) < 60 && Math.abs(r-b) < 60) {
+                    for (let r = minRadius; r <= maxRadius; r++) {
+                        const thetaStep = Math.PI / 16;
+                        let votes = 0;
                         
-                        // Verify circular white blob
-                        let whiteCount = 0, totalCount = 0, edgeContrast = 0;
-                        for (let dy = -7; dy <= 7; dy++) {
-                            for (let dx = -7; dx <= 7; dx++) {
-                                if (dx*dx + dy*dy > 49) continue;
-                                const nx = x + dx, ny = y + dy;
-                                if (nx > 0 && nx < w && ny > 0 && ny < h) {
-                                    const ni = (ny * w + nx) * 4;
-                                    totalCount++;
-                                    // FIXED: Lower white threshold
-                                    const nb = (data[ni] + data[ni+1] + data[ni+2]) / 3;
-                                    if (nb > 90) whiteCount++;  // Was 135
-                                    
-                                    // Edge detection for ball shape
-                                    if (Math.abs(dx) === 7 || Math.abs(dy) === 7) {
-                                        edgeContrast += 255 - nb;
-                                    }
-                                }
+                        // Vote for circle parameters
+                        for (let theta = 0; theta < 2*Math.PI; theta += thetaStep) {
+                            const cx = x + r * Math.cos(theta);
+                            const cy = y + r * Math.sin(theta);
+                            
+                            if (cx >= 0 && cx < w && cy >= 0 && cy < h && edges[Math.floor(cy)*w + Math.floor(cx)] > 200) {
+                                votes++;
                             }
                         }
                         
-                        const score = (whiteCount / totalCount) * (edgeContrast / 500);
-                        // FIXED: Much lower threshold
-                        if (score > 0.3 && score > bestScore) {  // Was 0.5
-                            bestScore = score;
-                            bestX = x;
-                            bestY = y;
+                        if (votes > 8) { // Strong circle
+                            circles.push({x, y, r, votes});
                         }
                     }
                 }
             }
-            return bestScore > 0.3 ? {x: bestX, y: bestY, score: bestScore} : null;
+            
+            // Non-max suppression
+            return circles.sort((a,b) => b.votes - a.votes).slice(0, 3);
         }
 
-        // 🎨 MAIN TRACKING LOOP
         function processFrame() {
-            if (!isTracking || !video.videoWidth || video.paused || video.ended) return;
+            if (!isTracking || video.paused) return;
             
-            // Draw current video frame to canvas
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             
-            // 🔥 DETECT BALL
-            const ball = findBallSimple(ctx, canvas.width, canvas.height);
-            
-            if (ball) {
-                // Add to trajectory with timestamp
-                trajectory.push({
-                    x: ball.x, 
-                    y: ball.y, 
-                    score: ball.score,
-                    t: frameCount
-                });
-                
-                // Keep only recent 100 points
-                if (trajectory.length > 100) trajectory.shift();
-                
-                lastBall = ball;
-                statusEl.textContent = `✅ TRACKING (${trajectory.length} pts)`;
-                pointsEl.textContent = trajectory.length;
+            let circles = [];
+            if (houghCB.checked) {
+                circles = houghCircles(imageData);
+                document.getElementById('circles').textContent = circles.length;
             }
             
-            // 🎨 DRAW GORGEOUS TRAIL
+            // Pick best circle (golf ball size + brightness)
+            const bestCircle = circles.find(c => {
+                const x = Math.floor(c.x), y = Math.floor(c.y);
+                const i = (y * canvas.width + x) * 4;
+                const brightness = (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
+                return brightness > 120 && c.r > 6 && c.r < 20;
+            }) || circles[0];
+            
+            if (bestCircle) {
+                trajectory.push({x: bestCircle.x, y: bestCircle.y, r: bestCircle.r});
+                if (trajectory.length > 80) trajectory.shift();
+                lastBall = bestCircle;
+                statusEl.textContent = `✅ ${circles.length} circles (${trajectory.length} pts)`;
+            }
+            
+            // DRAW TRAIL
             if (traceCB.checked && trajectory.length > 1) {
-                ctx.save();
-                
-                // Fade trail effect
-                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-                gradient.addColorStop(0, 'rgba(255, 255, 0, 0.9)');
-                gradient.addColorStop(0.3, 'rgba(0, 255, 0, 0.8)');
-                gradient.addColorStop(1, 'rgba(0, 100, 0, 0.1)');
-                
-                ctx.strokeStyle = smoothCB.checked ? gradient : '#00ff44';
-                ctx.lineWidth = smoothCB.checked ? 6 : 4;
+                ctx.strokeStyle = '#00ff44';
+                ctx.lineWidth = 5;
                 ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.shadowBlur = smoothCB.checked ? 20 : 10;
+                ctx.shadowBlur = 15;
                 ctx.shadowColor = '#00ff44';
                 
                 ctx.beginPath();
                 ctx.moveTo(trajectory[0].x, trajectory[0].y);
-                
-                // Smooth curve through points
                 for (let i = 1; i < trajectory.length; i++) {
-                    const t = i / (trajectory.length - 1);
-                    const smoothX = trajectory[0].x * (1-t)*(1-t) + 
-                                   2 * trajectory[Math.floor(i/2)].x * t * (1-t) + 
-                                   trajectory[i].x * t * t;
-                    const smoothY = trajectory[0].y * (1-t)*(1-t) + 
-                                   2 * trajectory[Math.floor(i/2)].y * t * (1-t) + 
-                                   trajectory[i].y * t * t;
-                    ctx.lineTo(smoothX, smoothY);
+                    ctx.lineTo(trajectory[i].x, trajectory[i].y);
                 }
                 ctx.stroke();
                 ctx.shadowBlur = 0;
-                ctx.restore();
                 
-                // 💛 GLOWING BALL HIGHLIGHT
-                if (lastBall) {
-                    const pulse = Math.sin(frameCount * 0.2) * 0.5 + 0.5;
-                    ctx.save();
-                    ctx.shadowBlur = 25 * pulse;
-                    ctx.shadowColor = '#ffff00';
-                    
-                    ctx.fillStyle = '#ffff00';
-                    ctx.beginPath();
-                    ctx.arc(lastBall.x, lastBall.y, 14, 0, Math.PI*2);
-                    ctx.fill();
-                    
-                    ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.arc(lastBall.x, lastBall.y, 8, 0, Math.PI*2);
-                    ctx.fill();
-                    ctx.restore();
-                }
+                // GLOWING BALL
+                ctx.fillStyle = '#ffff00';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ffff00';
+                ctx.beginPath();
+                ctx.arc(lastBall.x, lastBall.y, lastBall.r + 4, 0, Math.PI*2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
             }
-
-            // 📦 BOUNDING BOX (NEW!)
+            
+            // BOUNDING BOX
             if (bboxCB.checked && lastBall) {
-                const boxSize = 28;
                 ctx.strokeStyle = '#ff00ff';
                 ctx.lineWidth = 3;
                 ctx.setLineDash([8, 8]);
-                ctx.strokeRect(
-                    lastBall.x - boxSize/2, 
-                    lastBall.y - boxSize/2, 
-                    boxSize, 
-                    boxSize
-                );
+                ctx.strokeRect(lastBall.x - lastBall.r, lastBall.y - lastBall.r, lastBall.r*2, lastBall.r*2);
                 ctx.setLineDash([]);
-                
-                // Confidence score
                 ctx.fillStyle = '#ff00ff';
-                ctx.font = 'bold 16px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(`${Math.round(lastBall.score*100)}%`, 
-                            lastBall.x, lastBall.y - 20);
-                ctx.textAlign = 'start';
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText(`${Math.round(lastBall.votes)}v`, lastBall.x + 10, lastBall.y - 10);
             }
             
             frameCount++;
-            updateFPS();
-            rafId = requestAnimationFrame(processFrame);
-        }
-
-        function updateFPS() {
             fpsCounter.frames++;
-            const now = performance.now();
-            if (now - fpsCounter.last > 1000) {
-                fpsEl.textContent = Math.round(fpsCounter.frames * 1000 / (now - fpsCounter.last));
-                fpsCounter.frames = 0;
-                fpsCounter.last = now;
+            if (performance.now() - fpsCounter.last > 1000) {
+                document.getElementById('fps').textContent = Math.round(fpsCounter.frames * 1000 / (performance.now() - fpsCounter.last));
+                fpsCounter.frames = 0; fpsCounter.last = performance.now();
             }
+            
+            requestAnimationFrame(processFrame);
         }
 
-        // 🚀 EVENT HANDLERS (iOS Safari Optimized)
-        upload.addEventListener('change', (e) => {
+        // EVENTS
+        upload.addEventListener('change', e => {
             const file = e.target.files[0];
             if (file) {
                 video.src = URL.createObjectURL(file);
                 trajectory = [];
-                frameCount = 0;
-                fpsCounter = { last: 0, frames: 0 };
-                statusEl.textContent = '⏳ Loading video...';
-                console.log('✅ Video selected:', file.name, Math.round(file.size/1024/1024) + 'MB');
+                statusEl.textContent = 'Loading...';
             }
         });
 
         video.addEventListener('loadedmetadata', () => {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            ctx.imageSmoothingEnabled = false;
-            statusEl.innerHTML = `✅ Ready! <strong>${video.videoWidth}x${video.videoHeight}</strong>`;
-            console.log('📐 Canvas:', canvas.width, 'x', canvas.height);
-        });
-
-        video.addEventListener('loadeddata', () => {
-            statusEl.innerHTML = '🎬 <strong>Click PLAY</strong> to track!';
+            statusEl.textContent = 'Ready! Click PLAY';
         });
 
         video.addEventListener('play', () => {
             isTracking = true;
-            if (rafId) cancelAnimationFrame(rafId);
-            statusEl.innerHTML = '🔥 <strong>TRACKING...</strong>';
-            console.log('▶ Tracking started!');
             processFrame();
         });
 
-        video.addEventListener('pause', () => {
-            isTracking = false;
-            statusEl.textContent = '⏸️ Paused';
-        });
+        video.addEventListener('pause', () => isTracking = false);
+        document.getElementById('playBtn').addEventListener('click', () => video.play());
+        document.getElementById('clear').addEventListener('click', () => trajectory = []);
 
-        video.addEventListener('ended', () => {
-            isTracking = false;
-            statusEl.textContent = '✅ Complete! Replay?';
-        });
-
-        // 🎮 CONTROL BUTTONS
-        playBtn.addEventListener('click', () => {
-            video.play();
-        });
-
-        replayBtn.addEventListener('click', () => {
-            video.currentTime = 0;
-            video.play();
-        });
-
-        clearBtn.addEventListener('click', () => {
-            trajectory = [];
-            statusEl.textContent = '🗑️ Trail cleared';
-            pointsEl.textContent = '0';
-        });
-
-        // 📱 MOBILE OPTIMIZATIONS
         video.playsInline = true;
-        video.muted = true;
-        
-        console.log('🚀 Shot Tracer loaded - Upload your dim indoor golf video!');
+        console.log('🚀 HoughCircles Shot Tracer loaded!');
     </script>
 </body>
 </html>
