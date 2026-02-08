@@ -1,29 +1,12 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Golf Ball Tracker – Weight Adjustment (RUNNER)</title>
-  <link rel="preload" href="Fonts/good%20times%20rg.ttf" as="font" type="font/ttf" crossorigin="anonymous"/>
-  <link rel="preload" href="Fonts/Avenir%20(1).ttc" as="font" type="font/ttc" crossorigin="anonymous"/>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Golf Ball Tracker</title>
+  
   <style>
-  @font-face{
-    font-family:'Good Times';
-    src:local('Good Times'), url('Fonts/good%20times%20rg.ttf') format('truetype'), url('/Fonts/good%20times%20rg.ttf') format('truetype');
-    font-weight:normal;font-style:normal;font-display:swap;
-  }
-  @font-face{
-    font-family:'Avenir';
-    src:local('Avenir Next'),local('Avenir'), url('Fonts/Avenir%20(1).ttc') format('truetype'), url('/Fonts/Avenir%20(1).ttc') format('truetype');
-    font-weight:normal;font-style:normal;font-display:swap;
-  }
-  :root{
-    --safe-top:env(safe-area-inset-top);--safe-right:env(safe-area-inset-right);--safe-bottom:env(safe-area-inset-bottom);--safe-left:env(safe-area-inset-left);
-    --runner-black:#0c0c0c;--runner-red:#e7222a;--runner-darkred:#ba1e1e;--runner-steel:#1f1f1f;
-    --radius-sm:6px;--radius-md:10px;--radius-lg:16px;--radius-xl:24px;
-  }
     * {
       margin: 0;
       padding: 0;
@@ -198,14 +181,14 @@
       transform: scale(0.9);
     }
     
-    /* Loading screen - RUNNER styled */
+    /* Loading screen */
     .loading-screen {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: var(--runner-black);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -223,8 +206,8 @@
     .loader {
       width: 60px;
       height: 60px;
-      border: 4px solid rgba(231, 34, 42, 0.3);
-      border-top-color: var(--runner-red);
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top-color: white;
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin-bottom: 20px;
@@ -235,12 +218,9 @@
     }
     
     .loading-text {
-      font-family: 'Good Times', system-ui, sans-serif;
-      font-size: 16px;
-      font-weight: 700;
+      font-size: 18px;
+      font-weight: 600;
       margin-top: 10px;
-      color: #cfcfcf;
-      letter-spacing: 1px;
     }
     
     /* Start screen */
@@ -473,214 +453,13 @@
       font-weight: 600;
       cursor: pointer;
     }
-    
-    /* Weight Adjustment flow – RUNNER design (match tempo-game) */
-    .weight-flow-screen {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: var(--runner-black);
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 60;
-      padding: 24px 20px 100px;
-      text-align: center;
-      color: #fff;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      font-family: 'Avenir', system-ui, -apple-system, sans-serif;
-    }
-    .weight-flow-screen.show { display: flex; }
-    .weight-flow-title {
-      font-family: 'Good Times', system-ui, sans-serif;
-      font-size: 20px; font-weight: 900; margin-bottom: 16px; color: #fff;
-    }
-    .weight-flow-body {
-      font-size: 15px; line-height: 1.55; color: #cfcfcf; margin-bottom: 20px; max-width: 360px;
-    }
-    .weight-flow-btn {
-      background: linear-gradient(135deg, var(--runner-red), var(--runner-darkred));
-      border: none; color: #fff;
-      font-family: 'Good Times', system-ui, sans-serif;
-      font-size: 17px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;
-      padding: 14px 32px; border-radius: 999px; cursor: pointer;
-      box-shadow: 0 4px 20px rgba(231,34,42,0.35);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .weight-flow-btn:active { transform: scale(0.98); }
-    .weight-flow-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    
-    /* Draggable weights only (no preset buttons) */
-    .weight-putter-container {
-      position: relative;
-      width: 340px; max-width: 95%;
-      height: 90px;
-      background: url('https://static.wixstatic.com/media/7c3902_320d7f64f1ab4dea83a5911489a71015~mv2.png') center/contain no-repeat;
-      margin: 24px 0;
-      touch-action: none;
-    }
-    .weight-drag {
-      width: 97px; height: 90px;
-      background-size: contain; background-repeat: no-repeat;
-      cursor: pointer; position: absolute; bottom: 0;
-      pointer-events: auto;
-    }
-    .weight-drag.left-w {
-      background-image: url('https://static.wixstatic.com/media/7c3902_8d798ea21e1047a8ab7d1f3024f9c615~mv2.png');
-      left: 0;
-    }
-    .weight-drag.right-w {
-      background-image: url('https://static.wixstatic.com/media/7c3902_439f0075379d491cab1074da2241c8a2~mv2.png');
-      left: 243px;
-    }
-    .weight-binary-code {
-      font-family: 'Good Times', system-ui, sans-serif;
-      font-size: 18px; color: #94a3b8; margin-top: 12px; letter-spacing: 2px;
-    }
-    #replayOverlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.92);
-      display: none; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 70; padding: 24px;
-    }
-    #replayOverlay.show { display: flex; }
-    #replayCanvas {
-      max-width: 100%; max-height: 55vh;
-      border: 2px solid rgba(255,255,255,0.15); border-radius: var(--radius-md);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.8);
-    }
-    .replay-info { margin-top: 20px; text-align: center; color: #fff; font-family: 'Avenir', system-ui, sans-serif; }
-    .replay-angle { font-family: 'Good Times', system-ui, sans-serif; font-size: 28px; font-weight: 900; margin: 8px 0; color: var(--runner-red); }
-    .replay-next-btn {
-      margin-top: 20px; padding: 14px 32px;
-      background: linear-gradient(135deg, var(--runner-red), var(--runner-darkred));
-      border: none; color: #fff;
-      font-family: 'Good Times', system-ui, sans-serif;
-      font-size: 17px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;
-      border-radius: 999px; cursor: pointer;
-    }
-    .results-card {
-      max-width: 400px; width: 90%;
-      padding: 28px 24px; text-align: center;
-      background: linear-gradient(180deg, rgba(31,31,31,0.98) 0%, rgba(12,12,12,0.99) 100%);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: var(--radius-lg);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
-      font-family: 'Avenir', system-ui, sans-serif;
-    }
-    .results-avg { font-family: 'Good Times', system-ui, sans-serif; font-size: 42px; font-weight: 900; margin: 12px 0; color: var(--runner-red); }
-    .results-section {
-      background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06);
-      border-radius: var(--radius-md); padding: 16px; margin: 16px 0; text-align: left;
-    }
-    .results-label { font-family: 'Good Times', system-ui, sans-serif; font-size: 12px; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; }
-    .results-value { font-size: 16px; font-weight: 700; color: #fff; }
-    .results-recommendation {
-      background: linear-gradient(135deg, rgba(231,34,42,0.15), rgba(186,30,30,0.15));
-      border: 1px solid var(--runner-red);
-      border-radius: var(--radius-md); padding: 18px; margin: 20px 0;
-    }
-    .results-rec-title { font-family: 'Good Times', system-ui, sans-serif; font-size: 14px; font-weight: 800; color: var(--runner-red); margin-bottom: 8px; }
-    .results-actions { display: flex; gap: 12px; margin-top: 20px; }
-    .results-btn {
-      flex: 1; padding: 12px 20px;
-      border: 1px solid rgba(255,255,255,0.15); border-radius: 999px;
-      background: rgba(31,31,31,0.9); color: #fff;
-      font-family: 'Avenir', system-ui, sans-serif; font-size: 13px; font-weight: 700;
-      cursor: pointer;
-    }
-    .results-btn.primary {
-      background: linear-gradient(135deg, var(--runner-red), var(--runner-darkred));
-      border: none;
-    }
-    
-    /* Putt prompt overlay - centered during camera view */
-    .putt-prompt-overlay {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: linear-gradient(180deg, rgba(31,31,31,0.95) 0%, rgba(12,12,12,0.98) 100%);
-      border: 2px solid var(--runner-red);
-      border-radius: var(--radius-lg);
-      padding: 20px 28px;
-      color: #fff;
-      font-family: 'Avenir', system-ui, sans-serif;
-      font-size: 16px;
-      font-weight: 600;
-      z-index: 25;
-      text-align: center;
-      max-width: 85%;
-      box-shadow: 0 8px 32px rgba(231, 34, 42, 0.4);
-    }
-    
-    /* Countdown – top-left badge like tempo-game, synced with beep */
-    .weight-countdown-overlay {
-      position: fixed;
-      top: calc(14px + var(--safe-top)); left: calc(14px + var(--safe-left));
-      z-index: 65; min-width: 80px; padding: 16px 24px;
-      background: linear-gradient(180deg, rgba(31,31,31,0.95) 0%, rgba(12,12,12,0.98) 100%);
-      border: 2px solid var(--runner-red); border-radius: var(--radius-lg);
-      box-shadow: 0 4px 24px rgba(231,34,42,0.25);
-      font-family: 'Good Times', system-ui, sans-serif; font-size: 42px; font-weight: 900; color: #fff;
-      text-align: center; display: none; pointer-events: none;
-    }
-    .weight-countdown-overlay.show { display: block; }
-    .weight-countdown-overlay .countdown-sub { font-family: 'Avenir', system-ui, sans-serif; font-size: 12px; margin-top: 4px; opacity: 0.9; }
-    
-    /* Disclaimer box (like PostureAnalyzer) */
-    .weight-disclaimer {
-      max-width: 380px;
-      width: 90%;
-      background: rgba(31, 31, 31, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: var(--radius-md);
-      padding: 20px;
-      margin: 24px 0;
-      text-align: left;
-    }
-    
-    .weight-disclaimer-title {
-      font-family: 'Good Times', system-ui, sans-serif;
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--runner-red);
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .weight-disclaimer-text {
-      font-size: 14px;
-      line-height: 1.6;
-      color: #cfcfcf;
-    }
-    
-    .weight-align-visual {
-      width: 100%; max-width: 320px; margin: 20px 0;
-      padding: 16px 20px;
-      background: rgba(31,31,31,0.6); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: var(--radius-md);
-      text-align: left;
-    }
-    .weight-align-item {
-      font-size: 14px; font-weight: 600; color: #cfcfcf;
-      margin: 10px 0; padding-left: 8px;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .weight-align-item .lucide-icon { flex-shrink: 0; stroke: var(--runner-red); }
-    .weight-align-item:first-child { margin-top: 0; }
-    .weight-align-item:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
   <!-- Loading Screen -->
   <div class="loading-screen" id="loadingScreen">
     <div class="loader"></div>
-    <div class="loading-text">LOADING OPENCV.JS</div>
+    <div class="loading-text">Loading OpenCV.js...</div>
   </div>
   
   <!-- Start Screen -->
@@ -691,76 +470,6 @@
       <div class="start-btn-icon">📷</div>
       <div>START</div>
     </button>
-    <button class="weight-flow-btn" id="weightAdjustBtn" style="margin-top: 20px;">
-      Weight Adjustment
-    </button>
-  </div>
-  
-  <!-- Weight Adjustment Flow Screens -->
-  <div class="weight-flow-screen" id="weightIntroScreen">
-    <div class="weight-flow-title">Let's fine-tune your putter balance.</div>
-    <div class="weight-flow-body">First, tell us how your putter is currently set.</div>
-    <button class="weight-flow-btn" id="weightIntroStartBtn">Start</button>
-  </div>
-  
-  <div class="weight-flow-screen" id="weightConfigScreen">
-    <div class="weight-flow-title">Current weight configuration</div>
-    <div class="weight-flow-body" id="weightConfigBody">Select your current weight configuration. This will allow us to recommend the right adjustment.</div>
-    <div class="weight-putter-container" id="weightPutterContainer">
-      <div class="weight-drag left-w" id="weightDragLeft"></div>
-      <div class="weight-drag right-w" id="weightDragRight"></div>
-    </div>
-    <div class="weight-binary-code" id="weightBinaryCode">0000000000000</div>
-    <button class="weight-flow-btn" id="weightConfigConfirmBtn">Confirm weight setup</button>
-  </div>
-  
-  <div class="weight-flow-screen" id="weightCameraAlignScreen">
-    <div class="weight-flow-title">Important Disclaimer</div>
-    
-    <div class="weight-disclaimer">
-      <div class="weight-disclaimer-title">⚠️ Before You Begin</div>
-      <div class="weight-disclaimer-text">
-        This tool provides guidance based on ball tracking data. It is not a substitute for professional club fitting or instruction. Results may vary based on stroke mechanics, green conditions, and equipment. Always consult with a certified club fitter or PGA professional for personalized recommendations.
-      </div>
-    </div>
-    
-    <div class="weight-flow-body" style="margin-top: 24px;">
-      Position your camera directly above the putting line with the phone parallel to the target direction.
-    </div>
-    
-    <button class="weight-flow-btn" id="weightCameraReadyBtn">I Understand - Continue</button>
-  </div>
-  
-  <div class="weight-flow-screen" id="weightPuttSetupScreen">
-    <div class="weight-flow-title">Putt Setup</div>
-    <div class="weight-flow-body">Place the ball on the line and address the putt naturally.</div>
-    <button class="weight-flow-btn" id="weightPuttSetupStartBtn">Start test</button>
-  </div>
-  
-  <div class="weight-flow-screen" id="weightPuttPromptScreen">
-    <div class="weight-flow-title">Putt <span id="puttNumDisplay">1</span> of 5</div>
-    <div class="weight-flow-body">When ready, tap the button below. You'll have time to position yourself before the countdown begins.</div>
-    <button class="weight-flow-btn" id="weightStartPuttBtn">Ready to putt</button>
-  </div>
-  
-  <div class="weight-flow-screen" id="weightResultsScreen">
-    <div class="results-card" id="weightResultsCard"></div>
-  </div>
-  
-  <div class="putt-prompt-overlay" id="puttPromptOverlay" style="display: none;">
-    <div style="font-family: 'Good Times', system-ui, sans-serif; font-size: 14px; margin-bottom: 8px; color: var(--runner-red);">PUTT <span id="overlayPuttNum">1</span> OF 5</div>
-    <div>Position the ball on the center guide and prepare your stroke</div>
-  </div>
-  
-  <div class="weight-countdown-overlay" id="weightCountdownOverlay"></div>
-  
-  <div id="replayOverlay">
-    <canvas id="replayCanvas"></canvas>
-    <div class="replay-info">
-      <div class="replay-angle" id="replayAngleText"></div>
-      <div id="replayDirectionText"></div>
-      <button class="replay-next-btn" id="replayNextBtn">Next putt</button>
-    </div>
   </div>
   
   <!-- Error Screen -->
@@ -814,9 +523,9 @@
     <div class="setting-item">
       <div class="setting-label">
         <span>White Threshold</span>
-        <span id="thresholdVal">180</span>
+        <span id="thresholdVal">210</span>
       </div>
-      <input type="range" id="threshold" min="150" max="255" value="180">
+      <input type="range" id="threshold" min="180" max="255" value="210">
     </div>
     
     <div class="setting-item">
@@ -838,9 +547,9 @@
     <div class="setting-item">
       <div class="setting-label">
         <span>Roundness</span>
-        <span id="circularityVal">0.6</span>
+        <span id="circularityVal">0.7</span>
       </div>
-      <input type="range" id="circularity" min="0.4" max="1.0" step="0.05" value="0.6">
+      <input type="range" id="circularity" min="0.5" max="1.0" step="0.05" value="0.7">
     </div>
     
     <div class="setting-item">
@@ -930,10 +639,10 @@
     
     // Settings
     let settings = {
-      threshold: 180,
+      threshold: 210,
       minRadius: 8,
       maxRadius: 50,
-      circularityThreshold: 0.6,
+      circularityThreshold: 0.7,
       trailLength: 30,
       minConfidence: 5
     };
@@ -1088,44 +797,17 @@
         let src = cv.imread(canvas);
         let gray = new cv.Mat();
         let binary = new cv.Mat();
-        let adaptive = new cv.Mat();
-        let hsv = new cv.Mat();
-        let whiteMask = new cv.Mat();
-        let combined = new cv.Mat();
         let contours = new cv.MatVector();
         let hierarchy = new cv.Mat();
         
-        // Convert to grayscale
         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-        
-        // Method 1: Adaptive thresholding (works better in varying light)
-        cv.adaptiveThreshold(gray, adaptive, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 15, -5);
-        
-        // Method 2: Standard threshold
         cv.threshold(gray, binary, settings.threshold, 255, cv.THRESH_BINARY);
         
-        // Method 3: HSV-based white detection
-        cv.cvtColor(src, hsv, cv.COLOR_RGBA2RGB);
-        cv.cvtColor(hsv, hsv, cv.COLOR_RGB2HSV);
+        let kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(3, 3));
+        cv.morphologyEx(binary, binary, cv.MORPH_OPEN, kernel);
+        cv.morphologyEx(binary, binary, cv.MORPH_CLOSE, kernel);
         
-        // White color range in HSV (low saturation, high value)
-        let lowerWhite = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [0, 0, 180, 0]);
-        let upperWhite = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [180, 50, 255, 255]);
-        cv.inRange(hsv, lowerWhite, upperWhite, whiteMask);
-        
-        // Combine all methods
-        cv.bitwise_or(binary, adaptive, combined);
-        cv.bitwise_or(combined, whiteMask, combined);
-        
-        // Morphological operations to clean up noise
-        let kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(5, 5));
-        cv.morphologyEx(combined, combined, cv.MORPH_CLOSE, kernel);
-        cv.morphologyEx(combined, combined, cv.MORPH_OPEN, kernel);
-        
-        // Gaussian blur to smooth edges
-        cv.GaussianBlur(combined, combined, new cv.Size(5, 5), 0);
-        
-        cv.findContours(combined, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+        cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
         
         for (let i = 0; i < contours.size(); i++) {
           const contour = contours.get(i);
@@ -1139,47 +821,27 @@
           const circularity = calculateCircularity(contour);
           if (circularity < settings.circularityThreshold) continue;
           
-          // Additional check: use minimum enclosing circle
-          let circle = cv.minEnclosingCircle(contour);
           const moments = cv.moments(contour);
           const cx = moments.m10 / moments.m00;
           const cy = moments.m01 / moments.m00;
           const radius = Math.sqrt(area / Math.PI);
-          
-          // Calculate brightness of the region
-          let mask = new cv.Mat.zeros(gray.rows, gray.cols, cv.CV_8UC1);
-          cv.drawContours(mask, contours, i, [255, 255, 255, 255], -1);
-          let mean = cv.mean(gray, mask);
-          let brightness = mean[0];
-          mask.delete();
-          
-          // Prefer brighter objects (golf balls are usually bright)
-          const brightnessScore = brightness / 255;
-          const totalConfidence = (circularity * 0.6 + brightnessScore * 0.4) * 100;
           
           candidates.push({
             x: cx,
             y: cy,
             radius: radius,
             circularity: circularity,
-            confidence: totalConfidence,
-            area: area,
-            brightness: brightness
+            confidence: circularity * 100,
+            area: area
           });
         }
         
         src.delete();
         gray.delete();
         binary.delete();
-        adaptive.delete();
-        hsv.delete();
-        whiteMask.delete();
-        combined.delete();
         contours.delete();
         hierarchy.delete();
         kernel.delete();
-        lowerWhite.delete();
-        upperWhite.delete();
         
       } catch (e) {
         console.error('Detection error:', e);
@@ -1204,8 +866,7 @@
           
           const proximityScore = 1 / (1 + distance / 50);
           const shapeScore = candidate.circularity;
-          const brightnessScore = candidate.brightness ? (candidate.brightness / 255) : 0.5;
-          const totalScore = proximityScore * 0.5 + shapeScore * 0.3 + brightnessScore * 0.2;
+          const totalScore = proximityScore * 0.6 + shapeScore * 0.4;
           
           if (totalScore > bestScore) {
             bestScore = totalScore;
@@ -1215,21 +876,14 @@
         
         return bestCandidate;
       } else {
-        // When not tracking, prefer brighter, more circular objects
         return candidates.reduce((best, current) => {
-          const bestScore = best.circularity * 0.6 + (best.brightness || 128) / 255 * 0.4;
-          const currentScore = current.circularity * 0.6 + (current.brightness || 128) / 255 * 0.4;
-          return currentScore > bestScore ? current : best;
+          return current.circularity > best.circularity ? current : best;
         });
       }
     }
     
     function processFrame() {
       if (!opencvReady) return;
-      
-      if (weightState === 'putt' && canvas.width > 0 && canvas.height > 0) {
-        drawWeightGuides(ctx, canvas.width, canvas.height);
-      }
       
       const candidates = detectGolfBalls();
       const bestBall = selectBestCandidate(candidates);
@@ -1278,12 +932,10 @@
       
       // Draw path
       if (tracker.path.length > 1) {
-        ctx.strokeStyle = 'rgba(231, 34, 42, 0.9)';
-        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#FF0000';
+        ctx.lineWidth = 5;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        ctx.shadowColor = 'rgba(231, 34, 42, 0.5)';
-        ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.moveTo(tracker.path[0].x, tracker.path[0].y);
         
@@ -1291,7 +943,6 @@
           ctx.lineTo(tracker.path[i].x, tracker.path[i].y);
         }
         ctx.stroke();
-        ctx.shadowBlur = 0;
         
         ctx.fillStyle = '#FF0000';
         tracker.path.forEach((p, i) => {
@@ -1300,7 +951,7 @@
           ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = '#FFFFFF';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 1;
           ctx.stroke();
         });
       }
@@ -1375,659 +1026,10 @@
       await startCamera();
     };
     
-    /* ===================== WEIGHT ADJUSTMENT – Ball Direction Analysis ===================== */
-    const LAUNCH_FRAMES = 8;           // First N frames after impact for launch angle
-    const PUTT_RECORD_MS = 3500;      // Record duration per putt
-    const REFERENCE_LINE_Y = 0.5;     // Horizontal reference line (fraction of height)
-    const COUNTDOWN_STEP_MS = 1000;
-    const COUNTDOWN_STEPS = 3;
-    
-    function playWeightCountdownBeep() {
-      try {
-        var C = window.AudioContext || window.webkitAudioContext;
-        if (!C) return;
-        var ctx = new C();
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 880;
-        gain.gain.value = 0.15;
-        osc.start();
-        setTimeout(function() { osc.stop(); ctx.close(); }, 120);
-      } catch (e) {}
-    }
-    function showWeightCountdown(text, sub) {
-      var el = document.getElementById('weightCountdownOverlay');
-      if (!el) return;
-      el.innerHTML = '<span>' + text + '</span>' + (sub ? '<div class="countdown-sub">' + sub + '</div>' : '');
-      el.classList.add('show');
-    }
-    function hideWeightCountdown() {
-      var el = document.getElementById('weightCountdownOverlay');
-      if (el) { el.classList.remove('show'); el.innerHTML = ''; }
-    }
-    
-    let weightState = null;           // null | 'intro' | 'config' | 'align' | 'putt' | 'replay' | 'results'
-    let currentWeightConfig = null;
-    let weightPuttData = [];
-    let currentPuttIndex = 0;
-    let weightCaptureFrames = false;
-    let weightCapturedFrames = [];
-    let weightCapturedPath = [];
-    let weightPuttStartTime = 0;
-    let lastWeightRecommendation = null;
-    
-    function computeLaunchAngle(path) {
-      if (!path || path.length < 2) return null;
-      const n = Math.min(LAUNCH_FRAMES, path.length - 1);
-      const start = path[0];
-      const end = path[n];
-      const dx = end.x - start.x;
-      const dy = end.y - start.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 2) return null;
-      // Angle: right = positive, left = negative. Y increases downward.
-      const angleRad = Math.atan2(dx, -dy);
-      const angleDeg = angleRad * (180 / Math.PI);
-      const direction = angleDeg >= 0 ? 'Right' : 'Left';
-      const signedAngle = angleDeg;
-      return { angle: signedAngle, direction, raw: angleDeg };
-    }
-    
-    function drawReferenceLine(ctx, w, h) {
-      const y = h * REFERENCE_LINE_Y;
-      ctx.strokeStyle = 'rgba(76, 175, 80, 0.8)';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([10, 10]);
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    
-    /* Enhanced alignment guides with sophisticated styling */
-    const WEIGHT_GUIDE_DIR_Y = 0.5;
-    const WEIGHT_GUIDE_BALL_X = 0.5;
-    const WEIGHT_GUIDE_BALL_R_PCT = 0.055;
-    const WEIGHT_GUIDE_ZONE_W = 1.0;
-    const WEIGHT_GUIDE_ZONE_H = 0.58;
-    
-    function drawWeightGuides(ctx, w, h) {
-      const y = h * WEIGHT_GUIDE_DIR_Y;
-      const ballCx = w * WEIGHT_GUIDE_BALL_X;
-      const ballR = Math.min(w, h) * WEIGHT_GUIDE_BALL_R_PCT;
-      const zoneW = w * WEIGHT_GUIDE_ZONE_W;
-      const zoneH = h * WEIGHT_GUIDE_ZONE_H;
-      const zx = (w - zoneW) / 2;
-      const zy = (h - zoneH) / 2;
-      
-      ctx.save();
-      
-      // Main directional line - sophisticated red with glow
-      ctx.strokeStyle = 'rgba(231, 34, 42, 0.95)';
-      ctx.lineWidth = 5;
-      ctx.shadowColor = 'rgba(231, 34, 42, 0.6)';
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-      
-      // Directional arrow - refined styling
-      var margin = 26;
-      var xTip = w - margin;
-      var xBase = w - margin - 52;
-      var head = 16;
-      
-      // Arrow shaft
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(xBase, y);
-      ctx.lineTo(xTip, y);
-      ctx.stroke();
-      
-      // Arrow head - filled triangle
-      ctx.shadowBlur = 8;
-      ctx.fillStyle = 'rgba(231, 34, 42, 0.95)';
-      ctx.beginPath();
-      ctx.moveTo(xTip, y);
-      ctx.lineTo(xTip - head, y - head);
-      ctx.lineTo(xTip - head, y + head);
-      ctx.closePath();
-      ctx.fill();
-      
-      ctx.shadowBlur = 0;
-      
-      // Ball placement guide - sophisticated white circle with pulse effect
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-      ctx.lineWidth = 5;
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.arc(ballCx, y, ballR, 0, Math.PI * 2);
-      ctx.stroke();
-      
-      // Inner circle for emphasis
-      ctx.lineWidth = 2;
-      ctx.shadowBlur = 6;
-      ctx.beginPath();
-      ctx.arc(ballCx, y, ballR * 0.7, 0, Math.PI * 2);
-      ctx.stroke();
-      
-      ctx.shadowBlur = 0;
-      
-      // Text label with background
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.font = 'bold 15px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const labelText = 'PLACE BALL HERE';
-      const textMetrics = ctx.measureText(labelText);
-      const textW = textMetrics.width + 16;
-      const textH = 24;
-      ctx.fillRect(ballCx - textW/2, y - textH/2, textW, textH);
-      
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-      ctx.fillText(labelText, ballCx, y);
-      
-      // Frame zone - sophisticated border
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.lineWidth = 4;
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
-      ctx.shadowBlur = 8;
-      ctx.setLineDash([15, 10]);
-      ctx.strokeRect(zx, zy, zoneW, zoneH);
-      ctx.setLineDash([]);
-      
-      // Corner accents
-      const cornerLen = 40;
-      ctx.strokeStyle = 'rgba(231, 34, 42, 0.8)';
-      ctx.lineWidth = 5;
-      ctx.shadowColor = 'rgba(231, 34, 42, 0.5)';
-      ctx.shadowBlur = 10;
-      
-      // Top-left
-      ctx.beginPath();
-      ctx.moveTo(zx, zy + cornerLen);
-      ctx.lineTo(zx, zy);
-      ctx.lineTo(zx + cornerLen, zy);
-      ctx.stroke();
-      
-      // Top-right
-      ctx.beginPath();
-      ctx.moveTo(zx + zoneW - cornerLen, zy);
-      ctx.lineTo(zx + zoneW, zy);
-      ctx.lineTo(zx + zoneW, zy + cornerLen);
-      ctx.stroke();
-      
-      // Bottom-left
-      ctx.beginPath();
-      ctx.moveTo(zx, zy + zoneH - cornerLen);
-      ctx.lineTo(zx, zy + zoneH);
-      ctx.lineTo(zx + cornerLen, zy + zoneH);
-      ctx.stroke();
-      
-      // Bottom-right
-      ctx.beginPath();
-      ctx.moveTo(zx + zoneW - cornerLen, zy + zoneH);
-      ctx.lineTo(zx + zoneW, zy + zoneH);
-      ctx.lineTo(zx + zoneW, zy + zoneH - cornerLen);
-      ctx.stroke();
-      
-      ctx.restore();
-    }
-    
-    function showWeightScreen(id) {
-      document.querySelectorAll('.weight-flow-screen').forEach(el => el.classList.remove('show'));
-      const el = document.getElementById(id);
-      if (el) el.classList.add('show');
-    }
-    
-    function hideAllWeightScreens() {
-      document.querySelectorAll('.weight-flow-screen').forEach(el => el.classList.remove('show'));
-    }
-    
-    /* Draggable weights: putter bar (weight-recommendation style) */
-    const CRAN_WIDTH = 12;
-    const TOTAL_CRANS = 13;
-    const WEIGHT_BAR_W = 340;
-    const WEIGHT_W = 97;
-    const WEIGHT_LEFT_MAX_PX = 243 - WEIGHT_W;
-    const WEIGHT_RIGHT_MIN_PX = 243;
-    const WEIGHT_RIGHT_MAX_PX = WEIGHT_BAR_W - WEIGHT_W;
-    
-    function weightPosToSlots(leftPx, rightPx) {
-      var s1 = Math.round(leftPx / CRAN_WIDTH);
-      var s2 = Math.round((rightPx - WEIGHT_RIGHT_MIN_PX) / CRAN_WIDTH);
-      s1 = Math.max(0, Math.min(12, s1));
-      s2 = Math.max(0, Math.min(8, s2));
-      return { s1: s1, s2: s2 };
-    }
-    
-    function weightSlotsToConfig(s1, s2) {
-      var mid = (s1 / 12 + s2 / 8) / 2;
-      if (mid < 0.35) return 'back';
-      if (mid > 0.7) return 'front';
-      if (s1 / 12 > s2 / 8) return 'left';
-      return 'right';
-    }
-    
-    function updateWeightBinaryCode() {
-      var leftEl = document.getElementById('weightDragLeft');
-      var rightEl = document.getElementById('weightDragRight');
-      var codeEl = document.getElementById('weightBinaryCode');
-      if (!leftEl || !rightEl || !codeEl) return;
-      var l = parseInt(leftEl.style.left, 10) || 0;
-      var r = parseInt(rightEl.style.left, 10) || WEIGHT_RIGHT_MIN_PX;
-      var w1 = Math.round(l / CRAN_WIDTH);
-      var w2 = Math.round((r - WEIGHT_RIGHT_MIN_PX) / CRAN_WIDTH);
-      w1 = Math.max(0, Math.min(12, w1));
-      w2 = Math.max(0, Math.min(8, w2));
-      var b = Array(13).fill('1');
-      b[w1] = '0';
-      if (w2 < 13) b[12 - w2] = '0';
-      var code = b.join('');
-      codeEl.textContent = code;
-      weightBinaryCodeString = code;
-      var slots = weightPosToSlots(l, r);
-      currentWeightConfig = weightSlotsToConfig(slots.s1, slots.s2);
-    }
-    
-    function makeWeightDraggable(el, container, isLeft, onDragEnd) {
-      var down = false, shiftX, rect;
-      function move(px) {
-        rect = rect || container.getBoundingClientRect();
-        var nl = px - shiftX - rect.left;
-        var other = document.getElementById(isLeft ? 'weightDragRight' : 'weightDragLeft');
-        var oL = parseInt(other.style.left, 10);
-        var leftL = parseInt(document.getElementById('weightDragLeft').style.left, 10) || 0;
-        if (isLeft) {
-          nl = Math.max(0, Math.min(nl, WEIGHT_LEFT_MAX_PX, (oL || WEIGHT_RIGHT_MIN_PX) - el.offsetWidth));
-        } else {
-          var minR = Math.max(WEIGHT_RIGHT_MIN_PX, leftL + el.offsetWidth);
-          nl = Math.max(minR, Math.min(nl, WEIGHT_RIGHT_MAX_PX));
-        }
-        el.style.left = nl + 'px';
-      }
-      function onUp() {
-        if (!down) return;
-        down = false;
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('touchmove', onTouch);
-        var raw = parseInt(el.style.left, 10);
-        var l = Math.round(raw / CRAN_WIDTH) * CRAN_WIDTH;
-        if (isLeft) l = Math.max(0, Math.min(WEIGHT_LEFT_MAX_PX, l));
-        else l = Math.max(WEIGHT_RIGHT_MIN_PX, Math.min(WEIGHT_RIGHT_MAX_PX, l));
-        el.style.left = l + 'px';
-        onDragEnd && onDragEnd();
-      }
-      el.addEventListener('mousedown', function(e) {
-        down = true;
-        shiftX = e.clientX - el.getBoundingClientRect().left;
-        rect = container.getBoundingClientRect();
-        document.addEventListener('mousemove', onMove);
-      });
-      el.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        down = true;
-        shiftX = e.touches[0].clientX - el.getBoundingClientRect().left;
-        rect = container.getBoundingClientRect();
-        document.addEventListener('touchmove', onTouch, { passive: false });
-      }, { passive: false });
-      document.addEventListener('mouseup', onUp);
-      document.addEventListener('touchend', onUp);
-      function onMove(e) { move(e.clientX); }
-      function onTouch(e) { e.preventDefault(); move(e.touches[0].clientX); }
-      el.ondragstart = function() { return false; };
-    }
-    
-    function initWeightDraggables(prefill) {
-      var container = document.getElementById('weightPutterContainer');
-      var leftEl = document.getElementById('weightDragLeft');
-      var rightEl = document.getElementById('weightDragRight');
-      if (!container || !leftEl || !rightEl) return;
-      
-      if (prefill && prefill.length === 13) {
-        var idx0 = prefill.indexOf('0');
-        var idx1 = prefill.lastIndexOf('0');
-        if (idx0 >= 0) leftEl.style.left = (idx0 * CRAN_WIDTH) + 'px';
-        if (idx1 >= 0 && idx1 !== idx0) rightEl.style.left = (WEIGHT_RIGHT_MIN_PX + (12 - idx1) * CRAN_WIDTH) + 'px';
-        else rightEl.style.left = WEIGHT_RIGHT_MIN_PX + 'px';
-      } else if (prefill && ['back','front','left','right'].indexOf(prefill) >= 0) {
-        var pos = configToWeightPositions(prefill);
-        leftEl.style.left = pos.left + 'px';
-        rightEl.style.left = pos.right + 'px';
-      } else {
-        leftEl.style.left = '0px';
-        rightEl.style.left = WEIGHT_RIGHT_MIN_PX + 'px';
-      }
-      updateWeightBinaryCode();
-      makeWeightDraggable(leftEl, container, true, updateWeightBinaryCode);
-      makeWeightDraggable(rightEl, container, false, updateWeightBinaryCode);
-    }
-    
-    document.getElementById('weightAdjustBtn').onclick = () => {
-      document.getElementById('startScreen').classList.add('hidden');
-      document.getElementById('container').style.display = 'none';
-      weightState = 'intro';
-      showWeightScreen('weightIntroScreen');
-    };
-    
-    document.getElementById('weightIntroStartBtn').onclick = function() {
-      weightState = 'config';
-      var configBody = document.getElementById('weightConfigBody');
-      if (configBody) configBody.textContent = 'Drag the left weight to match your current putter configuration.';
-      initWeightDraggables(null);
-      document.getElementById('weightConfigConfirmBtn').onclick = function() {
-        weightState = 'align';
-        showWeightScreen('weightCameraAlignScreen');
-        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
-      };
-      showWeightScreen('weightConfigScreen');
-    };
-    
-    document.getElementById('weightCameraReadyBtn').onclick = async function() {
-      if (!opencvReady) {
-        alert('Please wait for OpenCV.js to load');
-        return;
-      }
-      hideAllWeightScreens();
-      document.getElementById('container').style.display = 'block';
-      document.getElementById('puttPromptOverlay').style.display = 'none';
-      await startCamera();
-      weightState = 'putt';
-      currentPuttIndex = 1;
-      weightPuttData = [];
-      showWeightScreen('weightPuttSetupScreen');
-    };
-    
-    document.getElementById('weightPuttSetupStartBtn').onclick = () => {
-      document.getElementById('weightPuttSetupScreen').classList.remove('show');
-      showWeightPuttPrompt();
-    };
-    
-    function showWeightPuttPrompt() {
-      document.getElementById('container').style.display = 'block';
-      document.querySelectorAll('.weight-flow-screen').forEach(el => el.classList.remove('show'));
-      document.getElementById('weightPuttPromptScreen').classList.add('show');
-      document.getElementById('puttNumDisplay').textContent = currentPuttIndex;
-      document.getElementById('weightStartPuttBtn').onclick = beginWeightPuttCapture;
-    }
-    
-    async function beginWeightPuttCapture() {
-      // Hide the prompt screen but keep camera visible
-      document.getElementById('weightPuttPromptScreen').classList.remove('show');
-      document.querySelector('.overlay').style.display = 'flex'; // Keep overlay visible
-      
-      // Show the putt overlay with guides
-      const overlayEl = document.getElementById('puttPromptOverlay');
-      overlayEl.style.display = 'block';
-      document.getElementById('overlayPuttNum').textContent = currentPuttIndex;
-      
-      // Wait for user to position (5 seconds)
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      
-      // Start countdown
-      for (var step = COUNTDOWN_STEPS; step >= 1; step--) {
-        showWeightCountdown(step, 'Get ready');
-        playWeightCountdownBeep();
-        await new Promise(function(r) { setTimeout(r, COUNTDOWN_STEP_MS); });
-      }
-      showWeightCountdown('GO!', 'Putt naturally');
-      playWeightCountdownBeep();
-      await new Promise(function(r) { setTimeout(r, 300); });
-      hideWeightCountdown();
-      
-      overlayEl.innerHTML = '<div style="font-family: \'Good Times\', system-ui, sans-serif; font-size: 14px; margin-bottom: 8px; color: var(--runner-red);">RECORDING</div><div>Putt naturally along the red line</div>';
-      
-      resetTracker();
-      weightCapturedFrames = [];
-      weightCapturedPath = [];
-      weightCaptureFrames = true;
-      weightPuttStartTime = Date.now();
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const checkInterval = setInterval(() => {
-        if (weightCaptureFrames && tracker.path.length > 0) {
-          weightCapturedPath = tracker.path.map(p => ({ x: p.x, y: p.y }));
-        }
-        if (weightCaptureFrames && ctx && canvas.width > 0 && canvas.height > 0) {
-          try {
-            weightCapturedFrames.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-            if (weightCapturedFrames.length > 90) weightCapturedFrames.shift();
-          } catch (e) {}
-        }
-        if (Date.now() - weightPuttStartTime >= PUTT_RECORD_MS) {
-          weightCaptureFrames = false;
-          clearInterval(checkInterval);
-          finishWeightPuttCapture();
-        }
-      }, 33);
-    }
-    
-    function finishWeightPuttCapture() {
-      document.getElementById('puttPromptOverlay').style.display = 'none';
-      
-      if (weightCapturedFrames.length === 0 && canvas.width > 0) {
-        try {
-          weightCapturedFrames.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-        } catch (e) {}
-      }
-      isRunning = false;
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-      }
-      video.srcObject = null;
-      
-      const path = weightCapturedPath.length > 0 ? weightCapturedPath : [...tracker.path];
-      const launchData = computeLaunchAngle(path);
-      
-      const puttResult = {
-        frames: weightCapturedFrames.length > 0 ? weightCapturedFrames : [],
-        path: path,
-        launchData,
-        puttNum: currentPuttIndex
-      };
-      weightPuttData.push(puttResult);
-      
-      showWeightReplay(puttResult);
-    }
-    
-    async function showWeightReplay(puttResult) {
-      weightState = 'replay';
-      const replayCanvas = document.getElementById('replayCanvas');
-      const replayCtx = replayCanvas.getContext('2d');
-      const w = canvas.width;
-      const h = canvas.height;
-      replayCanvas.width = w;
-      replayCanvas.height = h;
-      
-      const angleStr = puttResult.launchData
-        ? `${puttResult.launchData.angle >= 0 ? '+' : ''}${puttResult.launchData.angle.toFixed(1)}°`
-        : 'N/A';
-      const direction = puttResult.launchData ? puttResult.launchData.direction : 'Unknown';
-      
-      document.getElementById('replayAngleText').textContent = `Launch: ${angleStr} ${direction}`;
-      document.getElementById('replayDirectionText').textContent = '';
-      
-      const nextBtn = document.getElementById('replayNextBtn');
-      nextBtn.textContent = currentPuttIndex < 5 ? 'Next putt' : 'View results';
-      nextBtn.onclick = () => {
-        document.getElementById('replayOverlay').classList.remove('show');
-        if (currentPuttIndex < 5) {
-          currentPuttIndex++;
-          showWeightPuttPrompt();
-          startCamera();
-        } else {
-          showWeightResults();
-        }
-      };
-      
-      const frames = puttResult.frames;
-      const path = puttResult.path;
-      
-      if (frames.length > 0) {
-        for (let i = 0; i < frames.length; i++) {
-          replayCtx.putImageData(frames[i], 0, 0);
-          drawReferenceLine(replayCtx, w, h);
-          await new Promise(r => setTimeout(r, 1000 / 20));
-        }
-      } else {
-        replayCtx.fillStyle = '#111';
-        replayCtx.fillRect(0, 0, w, h);
-        drawReferenceLine(replayCtx, w, h);
-        if (path.length > 1) {
-          replayCtx.strokeStyle = '#FF0000';
-          replayCtx.lineWidth = 5;
-          replayCtx.lineCap = 'round';
-          replayCtx.lineJoin = 'round';
-          replayCtx.beginPath();
-          replayCtx.moveTo(path[0].x, path[0].y);
-          for (let j = 1; j < path.length; j++) {
-            replayCtx.lineTo(path[j].x, path[j].y);
-          }
-          replayCtx.stroke();
-        }
-      }
-      
-      document.getElementById('replayOverlay').classList.add('show');
-    }
-    
-    function getRecommendation(avgAngle, currentConfig) {
-      const absAngle = Math.abs(avgAngle);
-      if (absAngle < 0.3) {
-        return {
-          title: 'No change needed',
-          body: 'Your current weight configuration is working well. No adjustment needed.',
-          newConfig: currentConfig
-        };
-      }
-      if (avgAngle < 0) {
-        return {
-          title: 'Shift weight toward the back',
-          body: 'Average launch direction is left. Shift weight toward the back to promote a straighter path.',
-          newConfig: currentConfig === 'front' ? 'back' : currentConfig
-        };
-      } else {
-        return {
-          title: 'Shift weight to the opposite side',
-          body: 'Average launch direction is right. Move weight to the opposite side (left) of the putter.',
-          newConfig: 'left'
-        };
-      }
-    }
-    
-    function showWeightResults() {
-      weightState = 'results';
-      const validPutts = weightPuttData.filter(p => p.launchData);
-      const angles = validPutts.map(p => p.launchData.angle);
-      const avgAngle = angles.length > 0 ? angles.reduce((a, b) => a + b, 0) / angles.length : 0;
-      lastWeightRecommendation = getRecommendation(avgAngle, currentWeightConfig);
-      const rec = lastWeightRecommendation;
-      
-      const card = document.getElementById('weightResultsCard');
-      card.innerHTML = `
-        <div class="weight-flow-title">Results & Recommendation</div>
-        <div class="weight-flow-body" style="margin-bottom:16px;">Based on your average launch direction, here is the recommended adjustment.</div>
-        <div class="results-avg">${avgAngle >= 0 ? '+' : ''}${avgAngle.toFixed(2)}°</div>
-        <div class="results-section">
-          <div style="font-size:12px;color:#aaa;margin-bottom:6px;">Current weight configuration</div>
-          <div style="font-size:16px;font-weight:700;">${currentWeightConfig ? currentWeightConfig.charAt(0).toUpperCase() + currentWeightConfig.slice(1) : '—'}</div>
-        </div>
-        <div class="results-section">
-          <div style="font-size:12px;color:#aaa;margin-bottom:6px;">Recommended new configuration</div>
-          <div style="font-size:16px;font-weight:700;">${rec.newConfig ? rec.newConfig.charAt(0).toUpperCase() + rec.newConfig.slice(1) : '—'}</div>
-        </div>
-        <div class="results-recommendation">
-          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">${rec.title}</div>
-          <div style="font-size:15px;line-height:1.5;">${rec.body}</div>
-        </div>
-        <div class="results-actions">
-          <button class="results-btn primary" id="applyRecBtn">Apply recommendation</button>
-          <button class="results-btn" id="repeatTestBtn">Repeat test</button>
-        </div>
-      `;
-      
-      document.getElementById('weightResultsScreen').classList.add('show');
-      document.querySelectorAll('.weight-flow-screen').forEach(el => {
-        if (el.id !== 'weightResultsScreen') el.classList.remove('show');
-      });
-      
-      card.querySelector('#applyRecBtn').onclick = () => {
-        currentWeightConfig = lastWeightRecommendation?.newConfig || currentWeightConfig;
-        document.getElementById('weightResultsScreen').classList.remove('show');
-        showMessage('Adjustment applied', 'Update your putter weight and test again to confirm.', [
-          { text: 'Test again', onClick: () => { hideWeightMessage(); startWeightRepeatTest(); } }
-        ]);
-      };
-      
-      card.querySelector('#repeatTestBtn').onclick = () => {
-        document.getElementById('weightResultsScreen').classList.remove('show');
-        startWeightRepeatTest();
-      };
-    }
-    
-    let weightMessageOverlay = null;
-    function showMessage(title, body, buttons) {
-      if (!weightMessageOverlay) {
-        weightMessageOverlay = document.createElement('div');
-        weightMessageOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:80;display:flex;align-items:center;justify-content:center;padding:24px;';
-        document.body.appendChild(weightMessageOverlay);
-      }
-      const card = document.createElement('div');
-      card.className = 'results-card';
-      card.innerHTML = `<div class="weight-flow-title">${title}</div><div class="weight-flow-body">${body}</div><div id="msgBtns"></div>`;
-      buttons.forEach((btn, i) => {
-        const b = document.createElement('button');
-        b.className = i === 0 ? 'results-btn primary' : 'results-btn';
-        b.textContent = btn.text;
-        b.style.marginTop = '12px';
-        b.style.width = '100%';
-        b.onclick = () => { btn.onClick && btn.onClick(); };
-        card.querySelector('#msgBtns').appendChild(b);
-      });
-      weightMessageOverlay.innerHTML = '';
-      weightMessageOverlay.appendChild(card);
-      weightMessageOverlay.style.display = 'flex';
-    }
-    function hideWeightMessage() {
-      if (weightMessageOverlay) weightMessageOverlay.style.display = 'none';
-    }
-    
-    async function startWeightRepeatTest() {
-      hideWeightMessage();
-      var prefill = (lastWeightRecommendation && lastWeightRecommendation.newConfig) ? lastWeightRecommendation.newConfig : weightBinaryCodeString || null;
-      weightState = 'config';
-      var configBody = document.getElementById('weightConfigBody');
-      if (configBody) {
-        configBody.textContent = 'Adjust the left weight to match your updated configuration.';
-      }
-      initWeightDraggables(prefill);
-      document.getElementById('weightConfigConfirmBtn').onclick = function() {
-        weightState = 'align';
-        if (configBody) configBody.textContent = 'Drag the left weight to match your current putter configuration.';
-        showWeightScreen('weightCameraAlignScreen');
-        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
-      };
-      showWeightScreen('weightConfigScreen');
-    }
-    
     // OpenCV ready
     function onOpenCvReady() {
       opencvReady = true;
       document.getElementById('loadingScreen').classList.add('hidden');
-      if (window.self !== window.top) {
-        setTimeout(function() {
-          document.getElementById('startScreen').classList.add('hidden');
-          document.getElementById('container').style.display = 'none';
-          weightState = 'intro';
-          showWeightScreen('weightIntroScreen');
-        }, 100);
-      }
       console.log('OpenCV.js ready');
     }
     
