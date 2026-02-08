@@ -3,30 +3,55 @@
 <head>
     <title>Shot Tracer - Browser Ball Tracker</title>
     <style>
-        body { margin: 0; font-family: Arial; background: #000; color: #fff; }
-        #container { display: flex; max-width: 1200px; margin: auto; }
-        #videoPanel { flex: 1; position: relative; }
-        #video, #canvas { width: 100%; height: auto; max-height: 600px; }
-        #controls { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 10px; }
-        #traces { position: absolute; top: 10px; right: 10px; }
-        canvas { position: absolute; top: 0; pointer-events: none; }
+        body { margin: 0; font-family: Arial; background: #000; color: #fff; overflow: hidden; }
+        #container { display: flex; max-width: 1200px; margin: auto; height: 100vh; }
+        #videoPanel { flex: 1; position: relative; background: #111; }
+        #video, #canvas { width: 100%; height: auto; max-height: 100vh; display: block; }
+        #controls { 
+            position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); 
+            padding: 15px; border-radius: 8px; backdrop-filter: blur(10px);
+        }
+        #traces { 
+            position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); 
+            padding: 15px; border-radius: 8px; backdrop-filter: blur(10px); font-size: 14px;
+        }
+        canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+        button { 
+            background: linear-gradient(45deg, #333, #555); color: white; border: none; 
+            padding: 8px 16px; border-radius: 5px; margin: 3px; cursor: pointer; font-size: 14px;
+        }
+        button:hover { background: linear-gradient(45deg, #555, #777); }
+        input[type="checkbox"] { margin-right: 5px; transform: scale(1.2); }
+        label { display: block; margin: 5px 0; cursor: pointer; }
+        #status { font-weight: bold; color: #0f0; }
+        h1 { position: absolute; bottom: 20px; left: 20px; margin: 0; font-size: 24px; opacity: 0.7; }
     </style>
 </head>
 <body>
     <div id="container">
         <div id="videoPanel">
-            <video id="video" controls></video>
+            <video id="video" controls playsinline muted></video>
             <canvas id="canvas"></canvas>
+            
             <div id="controls">
+                <div style="font-weight: bold; margin-bottom: 10px;">📹 Shot Tracer</div>
                 <input type="file" id="upload" accept="video/*">
-                <label><input type="checkbox" id="trace" checked> Trace</label>
-                <label><input type="checkbox" id="smooth" checked> Smooth</label>
-                <button id="clear">Clear</button>
+                <br><br>
+                <label><input type="checkbox" id="trace" checked> ✨ Trace Ball</label>
+                <label><input type="checkbox" id="smooth" checked> 🌊 Smooth Path</label>
+                <br>
+                <button id="clear">🗑️ Clear Trail</button>
+                <button id="playBtn">▶ Play</button>
+                <button id="replayBtn">🔄 Replay</button>
             </div>
+            
             <div id="traces">
                 <div>FPS: <span id="fps">0</span></div>
                 <div>Points: <span id="points">0</span></div>
+                <div id="status">Upload golf video</div>
             </div>
+            
+            <h1>Browser-based Shot Tracer - No Backend Needed 🚀</h1>
         </div>
     </div>
 
@@ -38,167 +63,229 @@
         const traceCB = document.getElementById('trace');
         const smoothCB = document.getElementById('smooth');
         const clearBtn = document.getElementById('clear');
+        const playBtn = document.getElementById('playBtn');
+        const replayBtn = document.getElementById('replayBtn');
+        const statusEl = document.getElementById('status');
+        const fpsEl = document.getElementById('fps');
+        const pointsEl = document.getElementById('points');
         
-        let frameData, width, height, prevGray, trajectory = [], kalman = new Kalman();
-        let fpsCounter = { last: 0, frames: 0 }, bgFrame = null;
+        let trajectory = [];
         let isTracking = false;
+        let rafId;
+        let frameCount = 0;
+        let lastBall = null;
+        let fpsCounter = { last: 0, frames: 0 };
 
-        // Simple 1D Kalman filter for position smoothing
-        class Kalman {
-            constructor() {
-                this.x = 0; this.p = 1; this.q = 0.1; this.r = 1; this.k = 0;
-            }
-            update(z) {
-                this.p += this.q;
-                this.k = this.p / (this.p + this.r);
-                this.x += this.k * (z - this.x);
-                this.p *= (1 - this.k);
-                return this.x;
-            }
-        }
-
-        // HSV color space conversion
-        function rgbToHsv(r, g, b) {
-            r /= 255; g /= 255; b /= 255;
-            const max = Math.max(r, g, b), min = Math.min(r, g, b);
-            let h, s = max === 0 ? 0 : (max - min) / max, v = max;
-            const d = max - min;
-            if (max === min) h = 0;
-            else if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
-            else if (max === g) h = (b - r) / d + 2;
-            else h = (r - g) / d + 4;
-            return [h / 6, s, v];
-        }
-
-        // Detect golf ball (white/bright circle on grass/sky)
-        function findBall(frameData, w, h) {
-            const balls = [];
-            for (let i = 0; i < frameData.data.length; i += 4 * 8) { // Sample every 8px
-                const x = (i / 4) % w, y = Math.floor((i / 4) / w);
-                if (x < 20 || x > w-20 || y < 20 || y > h-20) continue;
-                
-                const r = frameData.data[i], g = frameData.data[i+1], b = frameData.data[i+2];
-                const hsv = rgbToHsv(r, g, b);
-                const bright = (r + g + b) / 3 > 180;
-                const white = hsv[1] < 0.3 && hsv[2] > 0.8; // Low saturation, high value
-                
-                if (bright && white) {
-                    // Check circularity (local variance)
-                    let neighbors = 0, sumX = 0, sumY = 0;
-                    for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) {
-                        if (dx*dx + dy*dy > 25) continue;
-                        const nx = x + dx, ny = y + dy;
-                        if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
-                            const idx = (ny * w + nx) * 4;
-                            if (frameData.data[idx+2] > 150) { // Blue channel for sky contrast
-                                neighbors++; sumX += nx; sumY += ny;
+        // 🔥 OPTIMIZED GOLF BALL DETECTION (Mobile Safari)
+        function findBallSimple(ctx, w, h) {
+            const imageData = ctx.getImageData(0, 0, w, h);
+            const data = imageData.data;
+            let bestX = 0, bestY = 0, bestScore = 0;
+            
+            // Scan every 12px for speed
+            for (let y = 40; y < h-40; y += 12) {
+                for (let x = 40; x < w-40; x += 12) {
+                    const i = (y * w + x) * 4;
+                    const r = data[i], g = data[i+1], b = data[i+2];
+                    
+                    // Golf ball signature: bright white, low color variance
+                    const brightness = (r + g + b) / 3;
+                    if (brightness > 150 && Math.abs(r-g) < 45 && Math.abs(r-b) < 45) {
+                        
+                        // Verify circular white blob
+                        let whiteCount = 0, totalCount = 0, edgeContrast = 0;
+                        for (let dy = -7; dy <= 7; dy++) {
+                            for (let dx = -7; dx <= 7; dx++) {
+                                if (dx*dx + dy*dy > 49) continue;
+                                const nx = x + dx, ny = y + dy;
+                                if (nx > 0 && nx < w && ny > 0 && ny < h) {
+                                    const ni = (ny * w + nx) * 4;
+                                    totalCount++;
+                                    const nb = (data[ni] + data[ni+1] + data[ni+2]) / 3;
+                                    if (nb > 135) whiteCount++;
+                                    
+                                    // Edge detection for ball shape
+                                    if (Math.abs(dx) === 7 || Math.abs(dy) === 7) {
+                                        edgeContrast += 255 - nb;
+                                    }
+                                }
                             }
                         }
-                    }
-                    if (neighbors > 10) {
-                        balls.push({x: sumX / neighbors, y: sumY / neighbors, score: neighbors});
+                        
+                        const score = (whiteCount / totalCount) * (edgeContrast / 500);
+                        if (score > 0.5 && score > bestScore) {
+                            bestScore = score;
+                            bestX = x;
+                            bestY = y;
+                        }
                     }
                 }
             }
-            return balls.length ? balls.reduce((best, curr) => curr.score > best.score ? curr : best) : null;
+            return bestScore > 0.5 ? {x: bestX, y: bestY, score: bestScore} : null;
         }
 
-        // Optical flow (simple block matching)
-        function opticalFlow(prev, curr, px, py) {
-            let bestMatch = 1000, bestDx = 0, bestDy = 0;
-            for (let dy = -10; dy <= 10; dy++) for (let dx = -10; dx <= 10; dx++) {
-                const score = blockDiff(prev, curr, px, py, dx, dy);
-                if (score < bestMatch) {
-                    bestMatch = score; bestDx = dx; bestDy = dy;
-                }
-            }
-            return {x: px + bestDx, y: py + bestDy};
-        }
-
-        function blockDiff(prev, curr, px, py, dx, dy) {
-            let diff = 0;
-            for (let by = -5; by <= 5; by++) for (let bx = -5; bx <= 5; bx++) {
-                const pidx = ((py+by)*width + (px+bx))*4;
-                const cidx = ((py+by+dy)*width + (px+bx+dx))*4;
-                diff += Math.abs(prev.data[pidx] - curr.data[cidx]);
-            }
-            return diff;
-        }
-
+        // 🎨 MAIN TRACKING LOOP
         function processFrame() {
-            if (!isTracking || video.paused || video.ended) return;
+            if (!isTracking || !video.videoWidth || video.paused || video.ended) return;
             
-            ctx.drawImage(video, 0, 0, width, height);
-            frameData = ctx.getImageData(0, 0, width, height);
+            // Draw current video frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            const ball = findBall(frameData, width, height);
-            if (ball && trajectory.length) {
-                const last = trajectory[trajectory.length-1];
-                const tracked = opticalFlow(prevGray, frameData, last.x, last.y);
-                const smoothedX = kalman.update(tracked.x);
-                const smoothedY = kalman.update(tracked.y);
+            // 🔥 DETECT BALL
+            const ball = findBallSimple(ctx, canvas.width, canvas.height);
+            
+            if (ball) {
+                // Add to trajectory with timestamp
+                trajectory.push({
+                    x: ball.x, 
+                    y: ball.y, 
+                    score: ball.score,
+                    t: frameCount
+                });
                 
-                trajectory.push({x: smoothedX, y: smoothedY, t: Date.now()});
+                // Keep only recent 100 points
+                if (trajectory.length > 100) trajectory.shift();
                 
-                // Keep only recent points for trail
-                if (trajectory.length > 200) trajectory.shift();
-            } else if (ball) {
-                trajectory = [{x: ball.x, y: ball.y, t: Date.now()}];
+                lastBall = ball;
+                statusEl.textContent = `✅ TRACKING (${trajectory.length} pts)`;
+                pointsEl.textContent = trajectory.length;
             }
             
-            prevGray = frameData; // Simplified grayscale
-            
-            // Draw trajectory
+            // 🎨 DRAW GORGEOUS TRAIL
             if (traceCB.checked && trajectory.length > 1) {
-                ctx.strokeStyle = smoothCB.checked ? '#00ff0040' : '#ff000080';
-                ctx.lineWidth = 3;
+                ctx.save();
+                
+                // Fade trail effect
+                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                gradient.addColorStop(0, 'rgba(255, 255, 0, 0.9)');
+                gradient.addColorStop(0.3, 'rgba(0, 255, 0, 0.8)');
+                gradient.addColorStop(1, 'rgba(0, 100, 0, 0.1)');
+                
+                ctx.strokeStyle = smoothCB.checked ? gradient : '#00ff44';
+                ctx.lineWidth = smoothCB.checked ? 6 : 4;
                 ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowBlur = smoothCB.checked ? 20 : 10;
+                ctx.shadowColor = '#00ff44';
+                
                 ctx.beginPath();
                 ctx.moveTo(trajectory[0].x, trajectory[0].y);
+                
+                // Smooth curve through points
                 for (let i = 1; i < trajectory.length; i++) {
-                    ctx.lineTo(trajectory[i].x, trajectory[i].y);
+                    const t = i / (trajectory.length - 1);
+                    const smoothX = trajectory[0].x * (1-t)*(1-t) + 
+                                   2 * trajectory[Math.floor(i/2)].x * t * (1-t) + 
+                                   trajectory[i].x * t * t;
+                    const smoothY = trajectory[0].y * (1-t)*(1-t) + 
+                                   2 * trajectory[Math.floor(i/2)].y * t * (1-t) + 
+                                   trajectory[i].y * t * t;
+                    ctx.lineTo(smoothX, smoothY);
                 }
                 ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.restore();
                 
-                // Ball highlight
-                if (ball) {
+                // 💛 GLOWING BALL HIGHLIGHT
+                if (lastBall) {
+                    const pulse = Math.sin(frameCount * 0.2) * 0.5 + 0.5;
+                    ctx.save();
+                    ctx.shadowBlur = 25 * pulse;
+                    ctx.shadowColor = '#ffff00';
+                    
                     ctx.fillStyle = '#ffff00';
                     ctx.beginPath();
-                    ctx.arc(ball.x, ball.y, 8, 0, Math.PI*2);
+                    ctx.arc(lastBall.x, lastBall.y, 14, 0, Math.PI*2);
                     ctx.fill();
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(lastBall.x, lastBall.y, 8, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.restore();
                 }
             }
             
-            // FPS
-            const now = performance.now();
-            fpsCounter.frames++;
-            if (now - fpsCounter.last > 1000) {
-                document.getElementById('fps').textContent = Math.round(fpsCounter.frames * 1000 / (now - fpsCounter.last));
-                fpsCounter.frames = 0; fpsCounter.last = now;
-            }
-            document.getElementById('points').textContent = trajectory.length;
-            
-            requestAnimationFrame(processFrame);
+            frameCount++;
+            updateFPS();
+            rafId = requestAnimationFrame(processFrame);
         }
 
-        // Event handlers
-        upload.addEventListener('change', e => {
+        function updateFPS() {
+            fpsCounter.frames++;
+            const now = performance.now();
+            if (now - fpsCounter.last > 1000) {
+                fpsEl.textContent = Math.round(fpsCounter.frames * 1000 / (now - fpsCounter.last));
+                fpsCounter.frames = 0;
+                fpsCounter.last = now;
+            }
+        }
+
+        // 🚀 EVENT HANDLERS (iOS Safari Optimized)
+        upload.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            video.src = URL.createObjectURL(file);
-            trajectory = []; kalman = new Kalman();
+            if (file) {
+                // Reset everything
+                video.src = URL.createObjectURL(file);
+                trajectory = [];
+                frameCount = 0;
+                fpsCounter = { last: 0, frames: 0 };
+                statusEl.textContent = '⏳ Loading video...';
+                console.log('✅ Video selected:', file.name, Math.round(file.size/1024/1024) + 'MB');
+            }
         });
-        
+
         video.addEventListener('loadedmetadata', () => {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            width = canvas.width; height = canvas.height;
-            isTracking = true;
-            requestAnimationFrame(processFrame);
+            ctx.imageSmoothingEnabled = false;
+            statusEl.innerHTML = `✅ Ready! <strong>${video.videoWidth}x${video.videoHeight}</strong>`;
+            console.log('📐 Canvas:', canvas.width, 'x', canvas.height);
         });
 
-        video.addEventListener('play', () => isTracking = true);
-        video.addEventListener('pause', () => isTracking = false);
-        clearBtn.addEventListener('click', () => trajectory = []);
+        video.addEventListener('loadeddata', () => {
+            statusEl.innerHTML = '🎬 <strong>Click PLAY</strong> to track!';
+        });
+
+        video.addEventListener('play', () => {
+            isTracking = true;
+            if (rafId) cancelAnimationFrame(rafId);
+            statusEl.innerHTML = '🔥 <strong>TRACKING...</strong>';
+            console.log('▶ Tracking started!');
+            processFrame();
+        });
+
+        video.addEventListener('pause', () => {
+            isTracking = false;
+            statusEl.textContent = '⏸️ Paused';
+        });
+
+        video.addEventListener('ended', () => {
+            isTracking = false;
+            statusEl.textContent = '✅ Complete! Replay?';
+        });
+
+        // 🎮 CONTROL BUTTONS
+        playBtn.addEventListener('click', () => {
+            video.play();
+        });
+
+        replayBtn.addEventListener('click', () => {
+            video.currentTime = 0;
+            video.play();
+        });
+
+        clearBtn.addEventListener('click', () => {
+            trajectory = [];
+            statusEl.textContent = '🗑️ Trail cleared';
+            pointsEl.textContent = '0';
+        });
+
+        // 📱 MOBILE OPTIMIZATIONS
+        video.playsInline = true;
+        video.muted = true; // iOS autoplay requirement
+        
+        console.log('🚀 Shot Tracer loaded - Upload golf video to test!');
     </script>
 </body>
 </html>
